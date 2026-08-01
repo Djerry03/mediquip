@@ -1,0 +1,84 @@
+# Pile complète en conteneurs.
+#   docker compose -f docker-compose.prod.yml up -d --build
+#
+# Prérequis : un fichier .env renseigné (cf. .env.example). En production,
+# l'API refuse de démarrer si JWT_SECRET, CORS_ORIGINS ou ADMIN_PASSWORD
+# sont restés à leur valeur d'exemple.
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    # Pas de port publié : seule l'API accède à la base, via le réseau interne.
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      POSTGRES_HOST: db
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      API_PORT: 4000
+      CORS_ORIGINS: ${CORS_ORIGINS}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
+      ADMIN_EMAIL: ${ADMIN_EMAIL}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      PAYMENT_PROVIDER: ${PAYMENT_PROVIDER:-manual}
+      MOMO_API_BASE_URL: ${MOMO_API_BASE_URL:-}
+      MOMO_SUBSCRIPTION_KEY: ${MOMO_SUBSCRIPTION_KEY:-}
+      MOMO_API_USER: ${MOMO_API_USER:-}
+      MOMO_API_KEY: ${MOMO_API_KEY:-}
+      MOMO_TARGET_ENVIRONMENT: ${MOMO_TARGET_ENVIRONMENT:-sandbox}
+      MOMO_CALLBACK_URL: ${MOMO_CALLBACK_URL:-}
+      PAYMENT_WEBHOOK_SECRET: ${PAYMENT_WEBHOOK_SECRET}
+      NOTIFICATION_TRANSPORT: ${NOTIFICATION_TRANSPORT:-log}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:-}
+      OPS_NOTIFICATION_EMAIL: ${OPS_NOTIFICATION_EMAIL:-}
+      NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL}
+    volumes:
+      # Les ordonnances déposées doivent survivre aux redéploiements.
+      - prescriptions:/repo/apps/api/uploads
+    ports:
+      - '4000:4000'
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+        NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL}
+        NEXT_PUBLIC_WHATSAPP_NUMBER: ${NEXT_PUBLIC_WHATSAPP_NUMBER:-}
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - '3004:3004'
+
+volumes:
+  db-data:
+  prescriptions:

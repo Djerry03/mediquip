@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400" role="img" aria-label="Boîte réfrigérante">
+  <defs>
+    <linearGradient id="g-p5" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0284c7" stop-opacity=".12"/>
+      <stop offset="100%" stop-color="#0284c7" stop-opacity=".28"/>
+    </linearGradient>
+  </defs>
+  <rect width="400" height="400" fill="url(#g-p5)"/>
+  <g color="#0284c7" opacity=".9"><rect x="112" y="150" width="176" height="150" rx="16" fill="none" stroke="currentColor" stroke-width="12"/><path d="M112 194h176" stroke="currentColor" stroke-width="12"/><path d="M200 214v66M176 232l24 14 24-14M176 262l24-14 24 14" stroke="currentColor" stroke-width="10" stroke-linecap="round" fill="none"/></g>
+  <g opacity=".55">
+    <rect x="330" y="26" width="44" height="12" rx="6" fill="#0284c7"/>
+    <rect x="346" y="10" width="12" height="44" rx="6" fill="#0284c7"/>
+  </g>
+  <text x="200" y="368" text-anchor="middle" font-family="system-ui,-apple-system,Segoe UI,sans-serif" font-size="19" font-weight="600" fill="#0284c7" opacity=".8">Boîte réfrigérante</text>
+</svg>

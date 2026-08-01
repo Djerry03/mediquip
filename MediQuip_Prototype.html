@@ -1,0 +1,1058 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MediQuip — Boutique médicale, paiement à la livraison</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#16241F;
+    --ink-soft:#3F4F47;
+    --forest:#1F5C4B;
+    --forest-dark:#153F33;
+    --mint:#2E8B6F;
+    --mint-soft:#E4EEE7;
+    --sage-bg:#F3F6F0;
+    --paper:#FFFFFF;
+    --amber:#C97B2E;
+    --amber-soft:#F7E9D8;
+    --line:#DCE3D8;
+    --danger:#B3452F;
+    --radius:14px;
+    --shadow:0 2px 10px rgba(22,36,31,0.06);
+    --shadow-lg:0 12px 32px rgba(22,36,31,0.14);
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;
+    background:var(--sage-bg);
+    color:var(--ink);
+    font-family:'Work Sans',sans-serif;
+    font-size:15px;
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3,.display{
+    font-family:'Fraunces',serif;
+    font-weight:600;
+    letter-spacing:-0.01em;
+    color:var(--ink);
+    margin:0;
+  }
+  a{color:inherit;text-decoration:none;}
+  button{font-family:inherit;cursor:pointer;}
+  img{max-width:100%;display:block;}
+  :focus-visible{outline:3px solid var(--amber);outline-offset:2px;}
+
+  /* ---- cross motif (signature element) ---- */
+  .cross{
+    position:relative;width:16px;height:16px;flex:none;
+  }
+  .cross::before,.cross::after{
+    content:"";position:absolute;background:currentColor;border-radius:2px;
+  }
+  .cross::before{left:6px;top:0;width:4px;height:16px;}
+  .cross::after{left:0;top:6px;width:16px;height:4px;}
+
+  /* ---- header ---- */
+  header.site{
+    position:sticky;top:0;z-index:40;
+    background:var(--paper);
+    border-bottom:1px solid var(--line);
+  }
+  .topbar{
+    display:flex;align-items:center;justify-content:space-between;
+    max-width:1180px;margin:0 auto;padding:14px 20px;gap:16px;
+  }
+  .logo{display:flex;align-items:center;gap:9px;font-family:'Fraunces',serif;font-weight:700;font-size:20px;color:var(--forest);}
+  .logo .cross{color:var(--forest);}
+  nav.main{display:flex;gap:22px;flex-wrap:wrap;}
+  nav.main a{font-size:14px;font-weight:500;color:var(--ink-soft);padding:6px 2px;border-bottom:2px solid transparent;transition:.15s;}
+  nav.main a:hover,nav.main a.active{color:var(--forest);border-bottom-color:var(--forest);}
+  .actions{display:flex;align-items:center;gap:10px;}
+  .lang-toggle{display:flex;border:1px solid var(--line);border-radius:20px;overflow:hidden;}
+  .lang-toggle button{border:none;background:var(--paper);padding:5px 11px;font-size:12px;font-weight:600;color:var(--ink-soft);}
+  .lang-toggle button.active{background:var(--forest);color:#fff;}
+  .icon-btn{position:relative;border:1px solid var(--line);background:var(--paper);border-radius:10px;padding:8px 10px;font-size:14px;display:flex;align-items:center;gap:6px;color:var(--ink);}
+  .icon-btn:hover{border-color:var(--forest);}
+  .badge-count{position:absolute;top:-7px;right:-7px;background:var(--amber);color:#fff;font-size:11px;font-weight:700;border-radius:20px;min-width:18px;height:18px;display:flex;align-items:center;justify-content:center;padding:0 4px;}
+
+  .strip{
+    background:var(--forest);color:#fff;font-size:12.5px;font-weight:500;
+    display:flex;justify-content:center;gap:28px;padding:7px 12px;flex-wrap:wrap;
+  }
+  .strip span{display:flex;align-items:center;gap:6px;}
+
+  /* ---- whatsapp floating ---- */
+  .wa-float{
+    position:fixed;bottom:22px;right:22px;z-index:50;
+    background:#1F5C4B;color:#fff;border-radius:50px;
+    display:flex;align-items:center;gap:9px;padding:13px 18px 13px 14px;
+    box-shadow:var(--shadow-lg);border:none;font-weight:600;font-size:14px;
+  }
+  .wa-float svg{width:20px;height:20px;}
+
+  main{max-width:1180px;margin:0 auto;padding:0 20px 80px;}
+
+  /* ---- hero ---- */
+  .hero{
+    position:relative;overflow:hidden;
+    background:linear-gradient(135deg,var(--forest) 0%,#144133 100%);
+    border-radius:22px;color:#fff;margin-top:26px;
+    padding:56px 44px;display:grid;grid-template-columns:1.1fr .9fr;gap:30px;align-items:center;
+  }
+  .hero::after{
+    content:"";position:absolute;inset:0;opacity:.10;
+    background-image:radial-gradient(circle,#fff 1.5px,transparent 1.5px);
+    background-size:26px 26px;pointer-events:none;
+  }
+  .hero-copy{position:relative;z-index:1;}
+  .eyebrow{font-size:12.5px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:#B9E0CE;display:flex;align-items:center;gap:8px;margin-bottom:14px;}
+  .hero h1{font-size:clamp(28px,4vw,42px);line-height:1.08;color:#fff;}
+  .hero p.sub{margin-top:14px;color:#DCEDE3;max-width:46ch;font-size:15.5px;}
+  .hero-ctas{display:flex;gap:12px;margin-top:26px;flex-wrap:wrap;}
+  .btn{border-radius:10px;padding:12px 20px;font-weight:600;font-size:14.5px;border:none;display:inline-flex;align-items:center;gap:8px;}
+  .btn-primary{background:var(--amber);color:#fff;}
+  .btn-primary:hover{background:#B36C24;}
+  .btn-ghost{background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.5);}
+  .btn-outline{background:transparent;border:1.5px solid var(--forest);color:var(--forest);}
+  .btn-outline:hover{background:var(--mint-soft);}
+  .btn-dark{background:var(--forest);color:#fff;}
+  .btn-dark:hover{background:var(--forest-dark);}
+  .btn-block{width:100%;justify-content:center;}
+  .btn-sm{padding:8px 14px;font-size:13px;}
+  .hero-card{
+    position:relative;z-index:1;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.25);
+    border-radius:16px;padding:20px;backdrop-filter:blur(2px);
+  }
+  .hero-card .row{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px dashed rgba(255,255,255,.25);font-size:13.5px;color:#EAF5EF;}
+  .hero-card .row:last-child{border-bottom:none;}
+  .hero-card strong{color:#fff;}
+
+  /* ---- section ---- */
+  .section{margin-top:52px;}
+  .section-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:20px;gap:12px;flex-wrap:wrap;}
+  .section-head h2{font-size:24px;}
+  .section-head .link{font-size:13.5px;font-weight:600;color:var(--forest);border-bottom:1px solid var(--forest);}
+
+  .grid-products{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:18px;}
+  .card{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;transition:.18s;display:flex;flex-direction:column;}
+  .card:hover{box-shadow:var(--shadow-lg);transform:translateY(-2px);}
+  .card-media{aspect-ratio:1/.85;background:var(--mint-soft);display:flex;align-items:center;justify-content:center;position:relative;}
+  .card-media .ph{font-size:40px;color:var(--forest);opacity:.4;}
+  .tag{position:absolute;top:10px;left:10px;background:var(--forest);color:#fff;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;padding:4px 8px;border-radius:6px;}
+  .tag.promo{background:var(--amber);}
+  .tag.stock{background:var(--danger);}
+  .card-body{padding:14px 14px 16px;display:flex;flex-direction:column;gap:8px;flex:1;}
+  .card-body .cat{font-size:11.5px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.05em;}
+  .card-body h3{font-size:15.5px;font-weight:600;font-family:'Work Sans',sans-serif;line-height:1.3;}
+  .price-row{display:flex;align-items:baseline;gap:8px;margin-top:auto;}
+  .price{font-weight:700;color:var(--forest);font-size:16.5px;}
+  .price-old{font-size:12.5px;color:#9AA79E;text-decoration:line-through;}
+  .stars{font-size:12px;color:var(--amber);}
+  .delay{font-size:11.5px;color:var(--ink-soft);display:flex;align-items:center;gap:5px;}
+
+  .add-btn{margin-top:8px;background:var(--mint-soft);color:var(--forest);border:1px solid var(--mint);border-radius:9px;padding:9px;font-weight:600;font-size:13px;}
+  .add-btn:hover{background:var(--forest);color:#fff;}
+
+  /* filters */
+  .filters{display:flex;gap:10px;margin-bottom:22px;flex-wrap:wrap;align-items:center;}
+  .search-box{flex:1;min-width:220px;display:flex;align-items:center;gap:8px;background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:9px 14px;}
+  .search-box input{border:none;outline:none;background:transparent;flex:1;font-size:14px;font-family:inherit;}
+  select{border:1px solid var(--line);border-radius:10px;padding:9px 12px;background:var(--paper);font-family:inherit;font-size:13.5px;color:var(--ink);}
+
+  /* trust strip */
+  .trust{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:16px;}
+  .trust-item{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);padding:18px;display:flex;gap:12px;align-items:flex-start;}
+  .trust-item .cross{color:var(--forest);margin-top:3px;}
+  .trust-item h4{font-size:14.5px;font-weight:700;margin-bottom:4px;}
+  .trust-item p{font-size:12.8px;color:var(--ink-soft);margin:0;}
+
+  /* product detail */
+  .pd{display:grid;grid-template-columns:.85fr 1.15fr;gap:40px;margin-top:28px;}
+  .pd-media{background:var(--mint-soft);border-radius:18px;aspect-ratio:1/1;display:flex;align-items:center;justify-content:center;font-size:64px;color:var(--forest);opacity:.35;}
+  .breadcrumb{font-size:12.5px;color:var(--ink-soft);margin-top:22px;}
+  .breadcrumb a:hover{color:var(--forest);}
+  .pd h1{font-size:27px;margin-top:6px;}
+  .pd .cat{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--forest);font-weight:700;}
+  .pd-price{display:flex;align-items:baseline;gap:10px;margin:14px 0;}
+  .pd-price .price{font-size:26px;}
+  .variant-group{margin:16px 0;}
+  .variant-group label.title{font-size:12.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-soft);display:block;margin-bottom:8px;}
+  .swatches{display:flex;gap:8px;flex-wrap:wrap;}
+  .swatch{border:1.5px solid var(--line);border-radius:8px;padding:7px 14px;font-size:13px;font-weight:600;background:var(--paper);}
+  .swatch.active{border-color:var(--forest);background:var(--mint-soft);color:var(--forest);}
+  .pd-info-box{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin:18px 0;font-size:13px;color:var(--ink-soft);display:flex;flex-direction:column;gap:8px;}
+  .pd-info-box .row{display:flex;gap:8px;align-items:center;}
+  .pd-desc{font-size:14px;color:var(--ink-soft);line-height:1.65;margin:16px 0;}
+  .qty-row{display:flex;align-items:center;gap:14px;margin:20px 0;}
+  .qty-stepper{display:flex;align-items:center;border:1px solid var(--line);border-radius:10px;overflow:hidden;}
+  .qty-stepper button{border:none;background:var(--sage-bg);width:36px;height:38px;font-size:16px;font-weight:700;color:var(--forest);}
+  .qty-stepper span{width:36px;text-align:center;font-weight:600;}
+
+  .reviews{margin-top:44px;border-top:1px solid var(--line);padding-top:28px;}
+  .review{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:12px;}
+  .review .rhead{display:flex;justify-content:space-between;font-size:13px;font-weight:600;margin-bottom:6px;}
+  .review p{margin:0;font-size:13.5px;color:var(--ink-soft);}
+  .review-form{display:flex;flex-direction:column;gap:10px;margin-top:18px;max-width:520px;}
+  textarea,input[type=text],input[type=tel]{font-family:inherit;border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:14px;width:100%;}
+
+  /* cart / checkout */
+  .cart-layout{display:grid;grid-template-columns:1.5fr 1fr;gap:32px;margin-top:26px;align-items:start;}
+  .cart-line{display:flex;gap:14px;background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:12px;align-items:center;}
+  .cart-line .thumb{width:60px;height:60px;background:var(--mint-soft);border-radius:9px;flex:none;display:flex;align-items:center;justify-content:center;color:var(--forest);font-size:22px;}
+  .cart-line .info{flex:1;}
+  .cart-line .info h4{font-size:14px;margin:0 0 3px;}
+  .cart-line .info .meta{font-size:12px;color:var(--ink-soft);}
+  .remove-link{font-size:12px;color:var(--danger);font-weight:600;margin-top:6px;display:inline-block;}
+  .summary{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);padding:20px;position:sticky;top:90px;}
+  .summary h3{font-size:16px;margin-bottom:14px;}
+  .sum-row{display:flex;justify-content:space-between;font-size:13.8px;padding:8px 0;border-bottom:1px dashed var(--line);}
+  .sum-row:last-of-type{border-bottom:none;}
+  .sum-row.total{font-weight:700;font-size:16px;color:var(--forest);border-top:1px solid var(--line);margin-top:6px;padding-top:12px;}
+  .free-ship-note{font-size:12px;background:var(--amber-soft);color:#8A5A1E;padding:8px 10px;border-radius:8px;margin-top:10px;}
+  .loyalty-note{font-size:12px;background:var(--mint-soft);color:var(--forest-dark);padding:8px 10px;border-radius:8px;margin-top:8px;display:flex;gap:6px;align-items:center;}
+
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .form-grid .full{grid-column:1/-1;}
+  .field label{font-size:12.5px;font-weight:600;color:var(--ink-soft);display:block;margin-bottom:5px;}
+  fieldset{border:none;padding:0;margin:0;}
+
+  .zone-option{border:1.5px solid var(--line);border-radius:10px;padding:11px 13px;display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;cursor:pointer;font-size:13.5px;}
+  .zone-option.active{border-color:var(--forest);background:var(--mint-soft);}
+  .zone-option .price{font-size:13.5px;}
+
+  .empty-state{text-align:center;padding:70px 20px;color:var(--ink-soft);}
+  .empty-state .cross{margin:0 auto 14px;width:34px;height:34px;color:var(--line);}
+  .empty-state .cross::before{width:8px;left:13px;}
+  .empty-state .cross::after{height:8px;top:13px;}
+
+  .confirm-box{max-width:560px;margin:40px auto;text-align:center;background:var(--paper);border:1px solid var(--line);border-radius:18px;padding:44px 34px;}
+  .confirm-badge{width:56px;height:56px;border-radius:50%;background:var(--mint-soft);color:var(--forest);display:flex;align-items:center;justify-content:center;margin:0 auto 18px;}
+  .confirm-badge .cross{width:22px;height:22px;}
+  .invoice-row{display:flex;justify-content:space-between;background:var(--sage-bg);border-radius:10px;padding:12px 16px;font-size:13.5px;margin:20px 0;}
+
+  /* pages generic */
+  .page-header{padding:40px 0 10px;}
+  .page-header h1{font-size:30px;}
+  .page-header p{color:var(--ink-soft);margin-top:8px;max-width:60ch;}
+  .about-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:18px;margin-top:30px;}
+  .about-card{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);padding:20px;}
+  .about-card h4{font-size:15px;margin-bottom:8px;}
+  .about-card p{font-size:13.5px;color:var(--ink-soft);margin:0;}
+
+  .b2b-box{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);padding:28px;margin-top:26px;max-width:640px;}
+
+  /* admin */
+  .admin-shell{display:grid;grid-template-columns:200px 1fr;gap:26px;margin-top:26px;}
+  .admin-nav{display:flex;flex-direction:column;gap:4px;}
+  .admin-nav a{padding:9px 12px;border-radius:9px;font-size:13.5px;font-weight:500;color:var(--ink-soft);}
+  .admin-nav a.active{background:var(--forest);color:#fff;}
+  .admin-panel{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);padding:22px;}
+  table{width:100%;border-collapse:collapse;font-size:13.5px;}
+  th,td{text-align:left;padding:10px 8px;border-bottom:1px solid var(--line);}
+  th{color:var(--ink-soft);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.03em;}
+  .status-pill{font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;}
+  .status-pill.prep{background:var(--amber-soft);color:#8A5A1E;}
+  .status-pill.route{background:#DDEBFA;color:#1E5C8A;}
+  .status-pill.done{background:var(--mint-soft);color:var(--forest-dark);}
+  .role-note{font-size:12px;color:var(--ink-soft);background:var(--sage-bg);border-radius:8px;padding:10px 12px;margin-bottom:16px;}
+
+  footer.site{background:var(--forest-dark);color:#CFE3D8;margin-top:70px;padding:44px 20px 26px;}
+  .footer-inner{max-width:1180px;margin:0 auto;display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:30px;}
+  footer.site h5{color:#fff;font-size:13px;margin-bottom:12px;}
+  footer.site p, footer.site a{font-size:12.8px;color:#AFCABE;line-height:1.8;}
+  footer.site a:hover{color:#fff;}
+  .foot-bottom{max-width:1180px;margin:34px auto 0;border-top:1px solid rgba(255,255,255,.12);padding-top:16px;font-size:11.5px;color:#8FB0A2;display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;}
+
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--forest);color:#fff;padding:12px 20px;border-radius:10px;font-size:13.5px;font-weight:600;box-shadow:var(--shadow-lg);z-index:99;display:flex;align-items:center;gap:8px;opacity:0;pointer-events:none;transition:.25s;}
+  .toast.show{opacity:1;transform:translate(-50%,-6px);}
+
+  @media(max-width:860px){
+    nav.main{display:none;}
+    .hero{grid-template-columns:1fr;padding:36px 24px;}
+    .pd{grid-template-columns:1fr;}
+    .cart-layout{grid-template-columns:1fr;}
+    .form-grid{grid-template-columns:1fr;}
+    .admin-shell{grid-template-columns:1fr;}
+    .footer-inner{grid-template-columns:1fr;}
+  }
+</style>
+</head>
+<body>
+
+<div class="strip" id="trustStrip"></div>
+
+<header class="site">
+  <div class="topbar">
+    <a class="logo" href="#/" onclick="go('home')"><span class="cross"></span> MediQuip</a>
+    <nav class="main" id="mainNav"></nav>
+    <div class="actions">
+      <div class="lang-toggle">
+        <button id="langFR" onclick="setLang('fr')">FR</button>
+        <button id="langEN" onclick="setLang('en')">EN</button>
+      </div>
+      <button class="icon-btn" onclick="go('cart')" id="cartBtn">🛒 <span id="cartLabel"></span><span class="badge-count" id="cartCount" style="display:none">0</span></button>
+    </div>
+  </div>
+</header>
+
+<a class="wa-float" href="https://wa.me/237600000000" target="_blank" rel="noopener">
+  <svg viewBox="0 0 32 32" fill="currentColor"><path d="M16 0C7.2 0 0 7.2 0 16c0 2.8.7 5.5 2.1 7.9L0 32l8.3-2.1C10.6 31.3 13.3 32 16 32c8.8 0 16-7.2 16-16S24.8 0 16 0zm0 29.3c-2.4 0-4.7-.6-6.8-1.8l-.5-.3-4.9 1.3 1.3-4.8-.3-.5C3.4 21 2.7 18.6 2.7 16 2.7 8.7 8.7 2.7 16 2.7S29.3 8.7 29.3 16 23.3 29.3 16 29.3z"/><path d="M23 19.1c-.4-.2-2.3-1.1-2.6-1.3-.4-.1-.6-.2-.9.2-.3.4-1 1.3-1.2 1.5-.2.2-.4.3-.8.1-.4-.2-1.7-.6-3.1-2-1.2-1-1.9-2.3-2.2-2.7-.2-.4 0-.6.2-.8.2-.2.4-.4.5-.6.2-.2.2-.4.4-.6.1-.2.1-.5 0-.7-.1-.2-.9-2.2-1.2-3-.3-.8-.6-.7-.9-.7h-.7c-.2 0-.6.1-1 .5-.3.4-1.3 1.3-1.3 3.1s1.3 3.6 1.5 3.9c.2.2 2.6 4 6.4 5.6.9.4 1.6.6 2.1.7.9.3 1.7.2 2.3.1.7-.1 2.3-.9 2.6-1.9.3-.9.3-1.7.2-1.9-.1-.2-.3-.3-.7-.5z"/></svg>
+  <span id="waLabel">WhatsApp</span>
+</a>
+
+<main id="app"></main>
+
+<footer class="site">
+  <div class="footer-inner">
+    <div>
+      <div class="logo" style="color:#fff;margin-bottom:10px;"><span class="cross"></span> MediQuip</div>
+      <p id="footAbout">Matériel médical livré chez vous, paiement à la réception. Cameroun.</p>
+    </div>
+    <div>
+      <h5 id="footNavTitle">Navigation</h5>
+      <p><a href="#" onclick="go('catalog')" id="footShop">Boutique</a></p>
+      <p><a href="#" onclick="go('b2b')" id="footB2b">Devis groupés</a></p>
+      <p><a href="#" onclick="go('about')" id="footAbout2">Qui sommes-nous</a></p>
+      <p><a href="#" onclick="go('admin')" id="footAdmin">Espace back-office</a></p>
+    </div>
+    <div>
+      <h5 id="footContactTitle">Contact</h5>
+      <p>WhatsApp / Tél : +237 6 00 00 00 00</p>
+      <p id="footHours">Lun–Sam, 8h–19h</p>
+    </div>
+  </div>
+  <div class="foot-bottom">
+    <span id="footRights">© 2026 MediQuip — Tous droits réservés</span>
+    <span id="footPrivacy">Politique de confidentialité · Vos données de livraison ne sont utilisées que pour votre commande.</span>
+  </div>
+</footer>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* =========================================================
+   MediQuip — prototype front-end (Phase 1 + partie Phase 2)
+   Données mockées côté client. À brancher sur l'API NestJS
+   (voir MediQuip_Architecture_Plan_Developpement_v2).
+   ========================================================= */
+
+const I18N = {
+  fr: {
+    navHome:"Accueil", navShop:"Boutique", navB2b:"Devis groupés", navAbout:"Qui sommes-nous", navAdmin:"Back-office",
+    strip1:"Livraison 24–72h selon l'article", strip2:"Livraison gratuite dès 40 000 FCFA", strip3:"Paiement à la livraison",
+    cart:"Panier", wa:"WhatsApp",
+    heroEyebrow:"Boutique médicale — paiement à la livraison",
+    heroTitle:"Le matériel médical livré chez vous, sans compte, sans avance.",
+    heroSub:"Diagnostic, mobilité, urgence — commandez en quelques clics, payez seulement à la réception. Cliniques : demandez un devis pour vos commandes groupées.",
+    heroCta1:"Voir la boutique", heroCta2:"Demander un devis clinique",
+    heroCardTitle:"Simulateur rapide",
+    heroCardZone:"Zone de livraison", heroCardDelay:"Délai estimé", heroCardFee:"Frais de livraison",
+    featured:"Produits vedettes", featuredLink:"Voir tout le catalogue",
+    trustTitle:"Pourquoi commander sur MediQuip",
+    t1t:"Paiement à la livraison", t1p:"Vous payez uniquement quand le colis est entre vos mains.",
+    t2t:"Confirmation avant expédition", t2p:"Un SMS ou appel de confirmation avant chaque envoi.",
+    t3t:"Retour sous 48h", t3p:"Article défectueux ? Signalez-le et on s'en occupe sous 48h.",
+    t4t:"Points de fidélité", t4p:"10 commandes honorées = un cadeau ou un bon d'achat.",
+    catalogTitle:"Catalogue", searchPh:"Rechercher un produit…",
+    allCats:"Toutes catégories", sortLabel:"Trier",
+    sortPop:"Popularité", sortPriceAsc:"Prix croissant", sortPriceDesc:"Prix décroissant",
+    add:"Ajouter au panier", addedToast:"Ajouté au panier",
+    bestseller:"Best-seller", new:"Nouveauté", promo:"Promo", pack:"Pack",
+    deliv:"Livré en",
+    pdDesc:"Description", pdColor:"Couleur", pdSize:"Taille",
+    pdDelay:"Délai de livraison estimé", pdWarranty:"Garantie retour 48h en cas de défaut",
+    pdReturns:"Voir la politique SAV",
+    qty:"Quantité", addCartBtn:"Ajouter au panier — ", buyNow:"Commander maintenant",
+    reviewsTitle:"Avis clients", writeReview:"Laisser un avis",
+    reviewName:"Votre nom", reviewText:"Votre avis", reviewSend:"Publier l'avis",
+    reviewNote:"Les avis sont modérés avant publication.",
+    cartTitle:"Votre panier", cartEmpty:"Votre panier est vide",
+    cartEmptySub:"Ajoutez des produits depuis la boutique pour commencer votre commande.",
+    browseShop:"Parcourir la boutique",
+    remove:"Retirer",
+    subtotal:"Sous-total", deliveryFee:"Frais de livraison", total:"Total à payer à la livraison",
+    freeShipNote:"Plus que {x} FCFA d'achats pour la livraison gratuite !",
+    freeShipDone:"Livraison gratuite appliquée ✓",
+    loyaltyNote:"Cette commande vous rapportera 1 point de fidélité (10 = cadeau).",
+    proceedCheckout:"Passer la commande",
+    checkoutTitle:"Finaliser la commande",
+    fullName:"Nom complet", phone:"Téléphone (WhatsApp/SMS)", address:"Adresse / quartier",
+    zoneLabel:"Zone de livraison", noteLabel:"Note pour le livreur (optionnel)",
+    codNote:"Paiement à la livraison : vous payez en espèces ou Mobile Money à la remise du colis. Un SMS de confirmation vous sera envoyé avant l'expédition.",
+    placeOrder:"Confirmer la commande",
+    checkoutSuccess:"Commande enregistrée — un SMS/WhatsApp de confirmation vous sera envoyé.",
+    checkoutNameRequired:"Veuillez renseigner votre nom complet.",
+    checkoutPhoneRequired:"Veuillez renseigner un numéro de téléphone valide.",
+    checkoutAddressRequired:"Veuillez renseigner une adresse de livraison.",
+    checkoutDuplicate:"Cette commande a déjà été enregistrée.",
+    confirmTitle:"Commande confirmée !",
+    confirmSub:"Merci ! Une confirmation SMS/WhatsApp va vous être envoyée avant l'expédition. Vous pouvez télécharger votre facture ci-dessous.",
+    orderNum:"N° de commande", orderTotal:"Montant à payer à la livraison", orderDelay:"Livraison estimée",
+    downloadInvoice:"Télécharger la facture (PDF)", backHome:"Retour à l'accueil",
+    aboutTitle:"Qui sommes-nous", aboutSub:"MediQuip équipe particuliers, cliniques et pharmacies en matériel médical fiable, livré partout au Cameroun avec paiement à la réception.",
+    aboutMissionT:"Notre mission", aboutMissionP:"Rendre le matériel médical accessible sans avance de frais ni déplacement, avec une confiance totale sur la qualité livrée.",
+    aboutTeamT:"Notre équipe", aboutTeamP:"Une équipe locale, réactive sur WhatsApp, qui connaît les réalités logistiques du terrain camerounais.",
+    aboutVisionT:"Notre vision", aboutVisionP:"Devenir la référence de la vente en ligne d'équipement médical en Afrique centrale.",
+    b2bTitle:"Devis pour commandes groupées", b2bSub:"Cliniques, cabinets, pharmacies : décrivez votre besoin, nous revenons vers vous sous 24h avec un devis.",
+    b2bOrg:"Nom de la structure", b2bContact:"Contact", b2bNeeds:"Détail de la demande (produits, quantités)",
+    b2bSend:"Envoyer la demande de devis", b2bSent:"Demande envoyée. Notre équipe vous recontacte sous 24h.",
+    adminTitle:"Back-office (aperçu)", adminOrders:"Commandes", adminCatalog:"Catalogue", adminReviews:"Avis", adminLoyalty:"Fidélité",
+    adminRoleNote:"Aperçu — dans la version production, l'accès est protégé par JWT + 2FA et RBAC (super-admin / gestionnaire / livreur).",
+    adminImportTitle:"Import CSV de catalogue (Phase 1)", adminImportHint:"Colonnes attendues : nom, catégorie, prix",
+    adminImportBtn:"Importer le CSV", adminImportEmpty:"Aucune donnée à importer.", adminImportSummary:"{x} ligne(s) importée(s) dans l'aperçu back-office.",
+    colOrder:"Commande", colClient:"Client", colZone:"Zone", colTotal:"Montant", colStatus:"Statut",
+    statusPrep:"En préparation", statusRoute:"En livraison", statusDone:"Livrée",
+  },
+  en: {
+    navHome:"Home", navShop:"Shop", navB2b:"Bulk quotes", navAbout:"About us", navAdmin:"Back office",
+    strip1:"Delivery in 24–72h depending on item", strip2:"Free delivery from 40,000 FCFA", strip3:"Cash on delivery",
+    cart:"Cart", wa:"WhatsApp",
+    heroEyebrow:"Medical shop — cash on delivery",
+    heroTitle:"Medical equipment delivered home, no account, no upfront payment.",
+    heroSub:"Diagnostics, mobility, emergency — order in a few clicks, pay only on delivery. Clinics: request a quote for bulk orders.",
+    heroCta1:"Browse the shop", heroCta2:"Request a clinic quote",
+    heroCardTitle:"Quick simulator",
+    heroCardZone:"Delivery zone", heroCardDelay:"Estimated delay", heroCardFee:"Delivery fee",
+    featured:"Featured products", featuredLink:"See full catalog",
+    trustTitle:"Why order with MediQuip",
+    t1t:"Cash on delivery", t1p:"You pay only when the package is in your hands.",
+    t2t:"Confirmation before shipping", t2p:"An SMS or call confirms every order before it ships.",
+    t3t:"48h returns", t3p:"Faulty item? Report it and we handle it within 48h.",
+    t4t:"Loyalty points", t4p:"10 completed orders = a gift or a voucher.",
+    catalogTitle:"Catalog", searchPh:"Search a product…",
+    allCats:"All categories", sortLabel:"Sort",
+    sortPop:"Popularity", sortPriceAsc:"Price: low to high", sortPriceDesc:"Price: high to low",
+    add:"Add to cart", addedToast:"Added to cart",
+    bestseller:"Bestseller", new:"New", promo:"Sale", pack:"Pack",
+    deliv:"Delivered in",
+    pdDesc:"Description", pdColor:"Color", pdSize:"Size",
+    pdDelay:"Estimated delivery delay", pdWarranty:"48h return warranty on defects",
+    pdReturns:"See returns policy",
+    qty:"Quantity", addCartBtn:"Add to cart — ", buyNow:"Order now",
+    reviewsTitle:"Customer reviews", writeReview:"Write a review",
+    reviewName:"Your name", reviewText:"Your review", reviewSend:"Post review",
+    reviewNote:"Reviews are moderated before publishing.",
+    cartTitle:"Your cart", cartEmpty:"Your cart is empty",
+    cartEmptySub:"Add products from the shop to start your order.",
+    browseShop:"Browse the shop",
+    remove:"Remove",
+    subtotal:"Subtotal", deliveryFee:"Delivery fee", total:"Total due on delivery",
+    freeShipNote:"Only {x} FCFA left for free delivery!",
+    freeShipDone:"Free delivery applied ✓",
+    loyaltyNote:"This order will earn you 1 loyalty point (10 = gift).",
+    proceedCheckout:"Proceed to checkout",
+    checkoutTitle:"Complete your order",
+    fullName:"Full name", phone:"Phone (WhatsApp/SMS)", address:"Address / neighborhood",
+    zoneLabel:"Delivery zone", noteLabel:"Note for the courier (optional)",
+    codNote:"Cash on delivery: pay by cash or mobile money when your package arrives. A confirmation SMS is sent before shipping.",
+    placeOrder:"Confirm order",
+    confirmTitle:"Order confirmed!",
+    confirmSub:"Thank you! A SMS/WhatsApp confirmation will be sent before shipping. You can download your invoice below.",
+    orderNum:"Order number", orderTotal:"Amount due on delivery", orderDelay:"Estimated delivery",
+    downloadInvoice:"Download invoice (PDF)", backHome:"Back to home",
+    aboutTitle:"About us", aboutSub:"MediQuip supplies individuals, clinics and pharmacies with reliable medical equipment, delivered anywhere in Cameroon with cash on delivery.",
+    aboutMissionT:"Our mission", aboutMissionP:"Make medical equipment accessible with no upfront cost and no travel, with full confidence in what's delivered.",
+    aboutTeamT:"Our team", aboutTeamP:"A local, WhatsApp-responsive team that knows the realities of logistics on the ground in Cameroon.",
+    aboutVisionT:"Our vision", aboutVisionP:"Become the reference for online medical equipment sales in Central Africa.",
+    b2bTitle:"Quote for bulk orders", b2bSub:"Clinics, practices, pharmacies: describe your need, we'll get back to you within 24h with a quote.",
+    b2bOrg:"Organization name", b2bContact:"Contact", b2bNeeds:"Request details (products, quantities)",
+    b2bSend:"Send quote request", b2bSent:"Request sent. Our team will contact you within 24h.",
+    adminTitle:"Back office (preview)", adminOrders:"Orders", adminCatalog:"Catalog", adminReviews:"Reviews", adminLoyalty:"Loyalty",
+    adminRoleNote:"Preview — in production, access is protected by JWT + 2FA and RBAC (super-admin / manager / courier).",
+    colOrder:"Order", colClient:"Customer", colZone:"Zone", colTotal:"Amount", colStatus:"Status",
+    statusPrep:"Preparing", statusRoute:"Out for delivery", statusDone:"Delivered",
+  }
+};
+
+const PRODUCTS = [
+  {id:'p1', cat:{fr:'Diagnostic',en:'Diagnostics'}, name:{fr:'Tensiomètre digital automatique',en:'Automatic digital blood pressure monitor'}, price:25000, oldPrice:21000, flags:['bestseller','promo'], delay:'24-48h', rating:4.6, reviews:23,
+    variants:{color:['Blanc','Gris']}, desc:{fr:"Mesure automatique de la tension artérielle au bras, écran large, mémoire de 60 lectures. Idéal pour un suivi à domicile.",en:"Automatic upper-arm blood pressure monitor, large screen, 60-reading memory. Ideal for home monitoring."}},
+  {id:'p2', cat:{fr:'Diagnostic',en:'Diagnostics'}, name:{fr:'Thermomètre infrarouge sans contact',en:'Contactless infrared thermometer'}, price:12000, flags:['new'], delay:'24-48h', rating:4.8, reviews:41,
+    variants:{}, desc:{fr:"Mesure de température frontale en 1 seconde, sans contact, adapté à toute la famille.",en:"1-second forehead temperature reading, contactless, suitable for the whole family."}},
+  {id:'p3', cat:{fr:'Mobilité',en:'Mobility'}, name:{fr:'Fauteuil roulant pliable',en:'Foldable wheelchair'}, price:85000, oldPrice:72000, flags:['promo'], delay:'48-72h', rating:4.4, reviews:12,
+    variants:{size:['Standard','Large']}, desc:{fr:"Fauteuil roulant léger et pliable, accoudoirs amovibles, idéal pour un usage quotidien ou de voyage.",en:"Lightweight foldable wheelchair with removable armrests, ideal for daily or travel use."}},
+  {id:'p4', cat:{fr:'Urgence',en:'Emergency'}, name:{fr:'Kit premiers secours complet',en:'Complete first aid kit'}, price:15000, flags:['pack'], delay:'24h', rating:4.9, reviews:57,
+    variants:{}, desc:{fr:"Pack complet : pansements, antiseptique, bandages, ciseaux, gants — pour la maison ou le véhicule.",en:"Complete pack: bandages, antiseptic, dressings, scissors, gloves — for home or vehicle."}},
+  {id:'p5', cat:{fr:'Diagnostic',en:'Diagnostics'}, name:{fr:'Oxymètre de pouls',en:'Pulse oximeter'}, price:8000, flags:['bestseller'], delay:'24-48h', rating:4.7, reviews:88,
+    variants:{color:['Bleu','Noir']}, desc:{fr:"Mesure la saturation en oxygène et le pouls en quelques secondes via le bout du doigt.",en:"Measures oxygen saturation and pulse in seconds via the fingertip."}},
+  {id:'p6', cat:{fr:'Mobilité',en:'Mobility'}, name:{fr:'Lit médicalisé électrique',en:'Electric medical bed'}, price:350000, flags:[], delay:'72h', rating:4.5, reviews:6,
+    variants:{}, desc:{fr:"Lit médicalisé à réglage électrique 3 sections, barrières de sécurité incluses, pour soins à domicile.",en:"3-section electrically adjustable medical bed with safety rails, for home care."}},
+];
+
+const ZONES = [
+  {id:'z1', name:{fr:'Douala — Centre',en:'Douala — Center'}, fee:1000, delay:'24h'},
+  {id:'z2', name:{fr:'Douala — Périphérie',en:'Douala — Outskirts'}, fee:2000, delay:'24-48h'},
+  {id:'z3', name:{fr:'Yaoundé',en:'Yaoundé'}, fee:3000, delay:'48-72h'},
+  {id:'z4', name:{fr:'Autres villes',en:'Other cities'}, fee:5000, delay:'72h'},
+];
+
+const FREE_SHIP_THRESHOLD = 40000;
+
+const MOCK_REVIEWS = {
+  p1:[{name:'Bella N.', rating:5, text:{fr:"Facile à utiliser, livré en 1 jour à Douala. Très satisfaite.", en:"Easy to use, delivered in 1 day in Douala. Very satisfied."}},
+      {name:'Armand K.', rating:4, text:{fr:"Bon appareil, l'écran pourrait être un peu plus grand.", en:"Good device, the screen could be a bit bigger."}}],
+  p5:[{name:'Chantal M.', rating:5, text:{fr:"Indispensable à la maison, précis et rapide.", en:"Essential at home, accurate and fast."}}],
+};
+
+const MOCK_ORDERS = [
+  {id:'MQ-2607-0182', client:'Chantal M.', zone:{fr:'Douala — Centre',en:'Douala — Center'}, total:33000, status:'route'},
+  {id:'MQ-2607-0181', client:'Clinique Bonassama', zone:{fr:'Douala — Périphérie',en:'Douala — Outskirts'}, total:210000, status:'prep'},
+  {id:'MQ-2607-0180', client:'Armand K.', zone:{fr:'Yaoundé',en:'Yaoundé'}, total:8000, status:'done'},
+  {id:'MQ-2607-0179', client:'Bella N.', zone:{fr:'Douala — Centre',en:'Douala — Center'}, total:25000, status:'done'},
+];
+
+/* ---------------- state ---------------- */
+let state = {
+  lang: 'fr',
+  view: 'home',
+  productId: null,
+  cart: [], // {productId, qty, color, size}
+  loyaltyPoints: 4,
+  selectedZone: ZONES[0].id,
+  lastOrder: null,
+  orders: JSON.parse(JSON.stringify(MOCK_ORDERS)),
+  orderKeys: [],
+  catalogImports: [],
+};
+
+function persistState(){
+  try {
+    localStorage.setItem('mediquipState', JSON.stringify({
+      lang: state.lang,
+      view: state.view,
+      productId: state.productId,
+      cart: state.cart,
+      loyaltyPoints: state.loyaltyPoints,
+      selectedZone: state.selectedZone,
+      lastOrder: state.lastOrder,
+      orders: state.orders,
+      orderKeys: state.orderKeys,
+      catalogImports: state.catalogImports,
+    }));
+  } catch (e) {
+    console.warn('Unable to persist MediQuip state', e);
+  }
+}
+
+function loadState(){
+  try {
+    const saved = localStorage.getItem('mediquipState');
+    if(!saved) return;
+    const parsed = JSON.parse(saved);
+    state = {
+      ...state,
+      ...parsed,
+      cart: parsed.cart || [],
+      orders: parsed.orders || JSON.parse(JSON.stringify(MOCK_ORDERS)),
+      orderKeys: parsed.orderKeys || [],
+      catalogImports: parsed.catalogImports || [],
+      loyaltyPoints: parsed.loyaltyPoints ?? state.loyaltyPoints,
+      selectedZone: parsed.selectedZone || state.selectedZone,
+      lastOrder: parsed.lastOrder || null,
+    };
+  } catch (e) {
+    console.warn('Unable to restore MediQuip state', e);
+  }
+}
+
+loadState();
+
+function t(key){ return I18N[state.lang][key] || key; }
+function fmt(n){ return n.toLocaleString('fr-FR').replace(/,/g,' ') + ' FCFA'; }
+function product(id){ return PRODUCTS.find(p=>p.id===id); }
+function zone(id){ return ZONES.find(z=>z.id===id); }
+
+function go(view, opts){
+  state.view = view;
+  if(opts && opts.productId) state.productId = opts.productId;
+  window.scrollTo({top:0, behavior:'smooth'});
+  persistState();
+  render();
+}
+
+function setLang(l){
+  state.lang = l;
+  persistState();
+  render();
+}
+
+function showToast(msg){
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'), 1800);
+}
+
+/* ---------------- cart logic ---------------- */
+function addToCart(productId, color, size, qty){
+  qty = qty || 1;
+  const existing = state.cart.find(l=>l.productId===productId && l.color===color && l.size===size);
+  if(existing){ existing.qty += qty; }
+  else state.cart.push({productId, color, size, qty});
+  persistState();
+  showToast(t('addedToast'));
+  renderCartCount();
+}
+function removeFromCart(idx){ state.cart.splice(idx,1); persistState(); render(); }
+function cartSubtotal(){
+  return state.cart.reduce((sum,l)=>{
+    const p = product(l.productId);
+    const price = p.oldPrice || p.price;
+    return sum + price*l.qty;
+  },0);
+}
+function deliveryFee(){
+  const sub = cartSubtotal();
+  if(sub >= FREE_SHIP_THRESHOLD || sub===0) return 0;
+  return zone(state.selectedZone).fee;
+}
+
+/* ---------------- render shell bits ---------------- */
+function renderNav(){
+  const items = [
+    ['home', t('navHome')], ['catalog', t('navShop')], ['b2b', t('navB2b')], ['about', t('navAbout')], ['admin', t('navAdmin')]
+  ];
+  document.getElementById('mainNav').innerHTML = items.map(([v,label])=>
+    `<a href="#" class="${state.view===v?'active':''}" onclick="go('${v}');return false;">${label}</a>`
+  ).join('');
+}
+function renderStrip(){
+  document.getElementById('trustStrip').innerHTML = `
+    <span><span class="cross" style="width:11px;height:11px;"></span>${t('strip1')}</span>
+    <span><span class="cross" style="width:11px;height:11px;"></span>${t('strip2')}</span>
+    <span><span class="cross" style="width:11px;height:11px;"></span>${t('strip3')}</span>`;
+}
+function renderCartCount(){
+  const count = state.cart.reduce((s,l)=>s+l.qty,0);
+  const el = document.getElementById('cartCount');
+  el.textContent = count;
+  el.style.display = count>0 ? 'flex' : 'none';
+  document.getElementById('cartLabel').textContent = t('cart');
+  document.getElementById('waLabel').textContent = t('wa');
+}
+function renderTopChrome(){
+  document.getElementById('langFR').classList.toggle('active', state.lang==='fr');
+  document.getElementById('langEN').classList.toggle('active', state.lang==='en');
+  renderNav();
+  renderStrip();
+  renderCartCount();
+  document.getElementById('footAbout').textContent = state.lang==='fr' ? "Matériel médical livré chez vous, paiement à la réception. Cameroun." : "Medical equipment delivered to your door, pay on arrival. Cameroon.";
+  document.getElementById('footNavTitle').textContent = state.lang==='fr' ? 'Navigation' : 'Navigation';
+  document.getElementById('footShop').textContent = t('navShop');
+  document.getElementById('footB2b').textContent = t('navB2b');
+  document.getElementById('footAbout2').textContent = t('navAbout');
+  document.getElementById('footAdmin').textContent = t('navAdmin');
+  document.getElementById('footContactTitle').textContent = state.lang==='fr' ? 'Contact' : 'Contact';
+  document.getElementById('footHours').textContent = state.lang==='fr' ? 'Lun–Sam, 8h–19h' : 'Mon–Sat, 8am–7pm';
+  document.getElementById('footRights').textContent = state.lang==='fr' ? '© 2026 MediQuip — Tous droits réservés' : '© 2026 MediQuip — All rights reserved';
+  document.getElementById('footPrivacy').textContent = state.lang==='fr' ? 'Politique de confidentialité · Vos données de livraison ne servent qu\'à votre commande.' : 'Privacy policy · Your delivery data is only used for your order.';
+}
+
+/* ---------------- product card ---------------- */
+function productCard(p){
+  const flagLabel = f => f==='bestseller'?t('bestseller'): f==='new'?t('new'): f==='promo'?t('promo'): t('pack');
+  const tags = p.flags.map(f=>`<span class="tag ${f==='promo'?'promo':''}">${flagLabel(f)}</span>`).join('');
+  return `
+  <div class="card">
+    <div class="card-media" onclick="go('product',{productId:'${p.id}'})" style="cursor:pointer">
+      ${tags}
+      <span class="ph">✚</span>
+    </div>
+    <div class="card-body">
+      <span class="cat">${p.cat[state.lang]}</span>
+      <h3 onclick="go('product',{productId:'${p.id}'})" style="cursor:pointer">${p.name[state.lang]}</h3>
+      <span class="stars">${'★'.repeat(Math.round(p.rating))}${'☆'.repeat(5-Math.round(p.rating))} <span style="color:var(--ink-soft)">(${p.reviews})</span></span>
+      <div class="price-row">
+        <span class="price">${fmt(p.oldPrice||p.price)}</span>
+        ${p.oldPrice?`<span class="price-old">${fmt(p.price)}</span>`:''}
+      </div>
+      <span class="delay">⏱ ${t('deliv')} ${p.delay}</span>
+      <button class="add-btn" onclick="addToCart('${p.id}',null,null,1)">${t('add')}</button>
+    </div>
+  </div>`;
+}
+
+/* ---------------- views ---------------- */
+function viewHome(){
+  const featured = PRODUCTS.filter(p=>p.flags.length>0).slice(0,4);
+  const z = zone(state.selectedZone);
+  return `
+  <section class="hero">
+    <div class="hero-copy">
+      <div class="eyebrow"><span class="cross"></span> ${t('heroEyebrow')}</div>
+      <h1>${t('heroTitle')}</h1>
+      <p class="sub">${t('heroSub')}</p>
+      <div class="hero-ctas">
+        <button class="btn btn-primary" onclick="go('catalog')">${t('heroCta1')}</button>
+        <button class="btn btn-ghost" onclick="go('b2b')">${t('heroCta2')}</button>
+      </div>
+    </div>
+    <div class="hero-card">
+      <div style="font-weight:700;margin-bottom:12px;">${t('heroCardTitle')}</div>
+      <div class="row"><span>${t('heroCardZone')}</span>
+        <select onchange="state.selectedZone=this.value;render();" style="background:rgba(255,255,255,.15);color:#fff;border-color:rgba(255,255,255,.4)">
+          ${ZONES.map(zz=>`<option value="${zz.id}" ${zz.id===state.selectedZone?'selected':''} style="color:#000">${zz.name[state.lang]}</option>`).join('')}
+        </select>
+      </div>
+      <div class="row"><span>${t('heroCardDelay')}</span><strong>${z.delay}</strong></div>
+      <div class="row"><span>${t('heroCardFee')}</span><strong>${fmt(z.fee)}</strong></div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-head">
+      <h2>${t('featured')}</h2>
+      <a class="link" href="#" onclick="go('catalog');return false;">${t('featuredLink')} →</a>
+    </div>
+    <div class="grid-products">${featured.map(productCard).join('')}</div>
+  </section>
+
+  <section class="section">
+    <div class="section-head"><h2>${t('trustTitle')}</h2></div>
+    <div class="trust">
+      <div class="trust-item"><span class="cross"></span><div><h4>${t('t1t')}</h4><p>${t('t1p')}</p></div></div>
+      <div class="trust-item"><span class="cross"></span><div><h4>${t('t2t')}</h4><p>${t('t2p')}</p></div></div>
+      <div class="trust-item"><span class="cross"></span><div><h4>${t('t3t')}</h4><p>${t('t3p')}</p></div></div>
+      <div class="trust-item"><span class="cross"></span><div><h4>${t('t4t')}</h4><p>${t('t4p')}</p></div></div>
+    </div>
+  </section>`;
+}
+
+let catalogQuery = '';
+let catalogCat = 'all';
+let catalogSort = 'pop';
+
+function viewCatalog(){
+  const cats = [...new Set(PRODUCTS.map(p=>p.cat[state.lang]))];
+  let list = PRODUCTS.filter(p=>{
+    const matchQ = p.name[state.lang].toLowerCase().includes(catalogQuery.toLowerCase());
+    const matchC = catalogCat==='all' || p.cat[state.lang]===catalogCat;
+    return matchQ && matchC;
+  });
+  if(catalogSort==='priceAsc') list = [...list].sort((a,b)=>(a.oldPrice||a.price)-(b.oldPrice||b.price));
+  if(catalogSort==='priceDesc') list = [...list].sort((a,b)=>(b.oldPrice||b.price)-(a.oldPrice||a.price));
+  if(catalogSort==='pop') list = [...list].sort((a,b)=>b.reviews-a.reviews);
+
+  return `
+  <div class="page-header"><h1>${t('catalogTitle')}</h1></div>
+  <div class="filters">
+    <div class="search-box">🔎 <input type="text" placeholder="${t('searchPh')}" value="${catalogQuery}" oninput="catalogQuery=this.value;renderCatalogList();"></div>
+    <select onchange="catalogCat=this.value;renderCatalogList();">
+      <option value="all">${t('allCats')}</option>
+      ${cats.map(c=>`<option value="${c}" ${catalogCat===c?'selected':''}>${c}</option>`).join('')}
+    </select>
+    <select onchange="catalogSort=this.value;renderCatalogList();">
+      <option value="pop" ${catalogSort==='pop'?'selected':''}>${t('sortPop')}</option>
+      <option value="priceAsc" ${catalogSort==='priceAsc'?'selected':''}>${t('sortPriceAsc')}</option>
+      <option value="priceDesc" ${catalogSort==='priceDesc'?'selected':''}>${t('sortPriceDesc')}</option>
+    </select>
+  </div>
+  <div class="grid-products" id="catalogGrid">${list.map(productCard).join('') || `<p>—</p>`}</div>
+  `;
+}
+function renderCatalogList(){
+  // lightweight partial re-render for filter interactions without full page jump/scroll reset
+  document.getElementById('app').innerHTML = viewCatalog();
+}
+
+function viewProduct(){
+  const p = product(state.productId) || PRODUCTS[0];
+  const revs = MOCK_REVIEWS[p.id] || [];
+  window._pdColor = window._pdColor || (p.variants.color ? p.variants.color[0] : null);
+  window._pdSize = window._pdSize || (p.variants.size ? p.variants.size[0] : null);
+  window._pdQty = window._pdQty || 1;
+  return `
+  <div class="breadcrumb"><a href="#" onclick="go('catalog');return false;">${t('navShop')}</a> / ${p.cat[state.lang]} / ${p.name[state.lang]}</div>
+  <div class="pd">
+    <div class="pd-media">✚</div>
+    <div>
+      <span class="cat">${p.cat[state.lang]}</span>
+      <h1>${p.name[state.lang]}</h1>
+      <span class="stars">${'★'.repeat(Math.round(p.rating))}${'☆'.repeat(5-Math.round(p.rating))} <span style="color:var(--ink-soft)">(${p.reviews})</span></span>
+      <div class="pd-price">
+        <span class="price">${fmt(p.oldPrice||p.price)}</span>
+        ${p.oldPrice?`<span class="price-old">${fmt(p.price)}</span>`:''}
+      </div>
+      <p class="pd-desc">${p.desc[state.lang]}</p>
+
+      ${p.variants.color ? `
+      <div class="variant-group">
+        <label class="title">${t('pdColor')}</label>
+        <div class="swatches">${p.variants.color.map(c=>`<button class="swatch ${window._pdColor===c?'active':''}" onclick="window._pdColor='${c}';render();">${c}</button>`).join('')}</div>
+      </div>`:''}
+      ${p.variants.size ? `
+      <div class="variant-group">
+        <label class="title">${t('pdSize')}</label>
+        <div class="swatches">${p.variants.size.map(s=>`<button class="swatch ${window._pdSize===s?'active':''}" onclick="window._pdSize='${s}';render();">${s}</button>`).join('')}</div>
+      </div>`:''}
+
+      <div class="pd-info-box">
+        <div class="row">⏱ <strong>${t('pdDelay')}:</strong> ${p.delay}</div>
+        <div class="row">✚ ${t('pdWarranty')}</div>
+        <div class="row">🚚 ${t('strip2')}</div>
+      </div>
+
+      <div class="qty-row">
+        <span style="font-size:13px;font-weight:600;">${t('qty')}</span>
+        <div class="qty-stepper">
+          <button onclick="window._pdQty=Math.max(1,window._pdQty-1);render();">−</button>
+          <span>${window._pdQty}</span>
+          <button onclick="window._pdQty=window._pdQty+1;render();">+</button>
+        </div>
+      </div>
+      <button class="btn btn-dark btn-block" onclick="addToCart('${p.id}',window._pdColor,window._pdSize,window._pdQty)">${t('addCartBtn')}${fmt((p.oldPrice||p.price)*window._pdQty)}</button>
+    </div>
+  </div>
+
+  <div class="reviews">
+    <h2 style="font-size:20px;margin-bottom:16px;">${t('reviewsTitle')}</h2>
+    ${revs.length ? revs.map(r=>`
+      <div class="review">
+        <div class="rhead"><span>${r.name}</span><span class="stars">${'★'.repeat(r.rating)}${'☆'.repeat(5-r.rating)}</span></div>
+        <p>${r.text[state.lang]}</p>
+      </div>`).join('') : `<p style="color:var(--ink-soft);font-size:13.5px;">—</p>`}
+    <div class="review-form">
+      <label style="font-size:13px;font-weight:600;">${t('writeReview')}</label>
+      <input type="text" placeholder="${t('reviewName')}">
+      <textarea rows="3" placeholder="${t('reviewText')}"></textarea>
+      <button class="btn btn-outline" style="width:fit-content" onclick="showToast(t('reviewNote'))">${t('reviewSend')}</button>
+      <span style="font-size:11.5px;color:var(--ink-soft)">${t('reviewNote')}</span>
+    </div>
+  </div>`;
+}
+
+function viewCart(){
+  if(state.cart.length===0){
+    return `
+    <div class="empty-state">
+      <span class="cross"></span>
+      <h2 style="font-size:20px;margin-bottom:6px;">${t('cartEmpty')}</h2>
+      <p style="margin-bottom:20px;">${t('cartEmptySub')}</p>
+      <button class="btn btn-dark" onclick="go('catalog')">${t('browseShop')}</button>
+    </div>`;
+  }
+  const sub = cartSubtotal();
+  const fee = deliveryFee();
+  const remaining = FREE_SHIP_THRESHOLD - sub;
+  return `
+  <div class="page-header"><h1>${t('cartTitle')}</h1></div>
+  <div class="cart-layout">
+    <div>
+      ${state.cart.map((l,idx)=>{
+        const p = product(l.productId);
+        const price = p.oldPrice||p.price;
+        return `
+        <div class="cart-line">
+          <div class="thumb">✚</div>
+          <div class="info">
+            <h4>${p.name[state.lang]}</h4>
+            <div class="meta">${l.color?l.color+' · ':''}${l.size?l.size+' · ':''}${t('qty')}: ${l.qty} × ${fmt(price)}</div>
+            <a class="remove-link" href="#" onclick="removeFromCart(${idx});return false;">${t('remove')}</a>
+          </div>
+          <strong>${fmt(price*l.qty)}</strong>
+        </div>`;
+      }).join('')}
+    </div>
+    <div class="summary">
+      <h3>${t('cartTitle')}</h3>
+      <fieldset>
+        <label class="title" style="font-size:12px;font-weight:700;text-transform:uppercase;color:var(--ink-soft);">${t('zoneLabel')}</label>
+        ${ZONES.map(z=>`
+          <div class="zone-option ${state.selectedZone===z.id?'active':''}" onclick="state.selectedZone='${z.id}';render();">
+            <span>${z.name[state.lang]} <span style="color:var(--ink-soft);font-size:11.5px;">(${z.delay})</span></span>
+            <span class="price">${z.fee===0?'—':fmt(z.fee)}</span>
+          </div>`).join('')}
+      </fieldset>
+      <div class="sum-row"><span>${t('subtotal')}</span><span>${fmt(sub)}</span></div>
+      <div class="sum-row"><span>${t('deliveryFee')}</span><span>${fee===0?(sub>0?'0 FCFA ✓':'—'):fmt(fee)}</span></div>
+      <div class="sum-row total"><span>${t('total')}</span><span>${fmt(sub+fee)}</span></div>
+      ${remaining>0 ? `<div class="free-ship-note">${t('freeShipNote').replace('{x}', fmt(remaining))}</div>` : `<div class="free-ship-note">${t('freeShipDone')}</div>`}
+      <div class="loyalty-note"><span class="cross" style="width:12px;height:12px;"></span>${t('loyaltyNote')}</div>
+      <button class="btn btn-primary btn-block" style="margin-top:16px;" onclick="go('checkout')">${t('proceedCheckout')}</button>
+    </div>
+  </div>`;
+}
+
+function viewCheckout(){
+  const sub = cartSubtotal();
+  const fee = deliveryFee();
+  return `
+  <div class="page-header"><h1>${t('checkoutTitle')}</h1></div>
+  <div class="cart-layout">
+    <div>
+      <div class="form-grid">
+        <div class="field full"><label>${t('fullName')}</label><input type="text" id="ckName" placeholder="ex. Chantal Mbarga"></div>
+        <div class="field"><label>${t('phone')}</label><input type="tel" id="ckPhone" placeholder="+237 6XX XX XX XX"></div>
+        <div class="field"><label>${t('zoneLabel')}</label>
+          <select id="ckZone">${ZONES.map(z=>`<option value="${z.id}" ${z.id===state.selectedZone?'selected':''}>${z.name[state.lang]}</option>`).join('')}</select>
+        </div>
+        <div class="field full"><label>${t('address')}</label><input type="text" id="ckAddr" placeholder="Quartier, repère..."></div>
+        <div class="field full"><label>${t('noteLabel')}</label><textarea rows="2" id="ckNote"></textarea></div>
+      </div>
+      <div class="pd-info-box" style="margin-top:20px;">
+        <div class="row">💳 ${t('codNote')}</div>
+      </div>
+    </div>
+    <div class="summary">
+      <h3>${t('total')}</h3>
+      <div class="sum-row"><span>${t('subtotal')}</span><span>${fmt(sub)}</span></div>
+      <div class="sum-row"><span>${t('deliveryFee')}</span><span>${fee===0?'0 FCFA':fmt(fee)}</span></div>
+      <div class="sum-row total"><span>${t('total')}</span><span>${fmt(sub+fee)}</span></div>
+      <button class="btn btn-primary btn-block" style="margin-top:16px;" onclick="placeOrder()">${t('placeOrder')}</button>
+    </div>
+  </div>`;
+}
+
+function placeOrder(){
+  if(state.cart.length===0){ showToast(t('cartEmpty')); return; }
+
+  const name = document.getElementById('ckName').value.trim();
+  const phone = document.getElementById('ckPhone').value.trim();
+  const address = document.getElementById('ckAddr').value.trim();
+  const z = zone(document.getElementById('ckZone').value) || zone(state.selectedZone);
+
+  if(!name){ showToast(t('checkoutNameRequired')); return; }
+  if(!/^\+?[0-9\s\-()]{7,15}$/.test(phone)){ showToast(t('checkoutPhoneRequired')); return; }
+  if(!address){ showToast(t('checkoutAddressRequired')); return; }
+
+  const sub = cartSubtotal();
+  const fee = deliveryFee();
+  const idempotenceKey = [name.toLowerCase(), phone, address.toLowerCase(), z.id, state.cart.map(l=>`${l.productId}:${l.qty}:${l.color||''}:${l.size||''}`).join('|')].join('|');
+  if(state.orderKeys.includes(idempotenceKey)){
+    showToast(t('checkoutDuplicate'));
+    return;
+  }
+
+  const orderId = `MQ-${new Date().toISOString().slice(2,10).replace(/-/g,'')}-${String(state.orders.length + 1).padStart(4,'0')}`;
+  const order = {
+    id: orderId,
+    client: name,
+    zone: {fr: z.name.fr, en: z.name.en},
+    total: sub + fee,
+    status: 'prep',
+    phone,
+    address,
+    idempotenceKey,
+  };
+
+  state.orders.unshift(order);
+  state.orderKeys.push(idempotenceKey);
+  state.lastOrder = {
+    id: order.id,
+    total: order.total,
+    zone: z,
+    idempotenceKey,
+  };
+  state.cart = [];
+  state.loyaltyPoints = Math.min(10, (state.loyaltyPoints || 0) + 1);
+  persistState();
+  showToast(t('checkoutSuccess'));
+  state.view = 'confirm';
+  render();
+}
+
+function viewConfirm(){
+  if(!state.lastOrder) return viewHome();
+  const o = state.lastOrder;
+  return `
+  <div class="confirm-box">
+    <div class="confirm-badge"><span class="cross"></span></div>
+    <h1 style="font-size:22px;">${t('confirmTitle')}</h1>
+    <p style="color:var(--ink-soft);font-size:14px;margin-top:10px;">${t('confirmSub')}</p>
+    <div class="invoice-row"><span>${t('orderNum')}</span><strong>${o.id}</strong></div>
+    <div class="invoice-row"><span>${t('orderTotal')}</span><strong>${fmt(o.total)}</strong></div>
+    <div class="invoice-row"><span>${t('orderDelay')}</span><strong>${o.zone.delay}</strong></div>
+    <div style="display:flex;gap:10px;justify-content:center;margin-top:22px;flex-wrap:wrap;">
+      <button class="btn btn-outline" onclick="showToast('PDF —'+' ${t('downloadInvoice')}')">${t('downloadInvoice')}</button>
+      <button class="btn btn-dark" onclick="go('home')">${t('backHome')}</button>
+    </div>
+  </div>`;
+}
+
+function viewAbout(){
+  return `
+  <div class="page-header"><h1>${t('aboutTitle')}</h1><p>${t('aboutSub')}</p></div>
+  <div class="about-grid">
+    <div class="about-card"><h4>${t('aboutMissionT')}</h4><p>${t('aboutMissionP')}</p></div>
+    <div class="about-card"><h4>${t('aboutTeamT')}</h4><p>${t('aboutTeamP')}</p></div>
+    <div class="about-card"><h4>${t('aboutVisionT')}</h4><p>${t('aboutVisionP')}</p></div>
+  </div>`;
+}
+
+function viewB2b(){
+  return `
+  <div class="page-header"><h1>${t('b2bTitle')}</h1><p>${t('b2bSub')}</p></div>
+  <div class="b2b-box">
+    <div class="field" style="margin-bottom:12px;"><label>${t('b2bOrg')}</label><input type="text"></div>
+    <div class="field" style="margin-bottom:12px;"><label>${t('b2bContact')}</label><input type="text" placeholder="Téléphone / WhatsApp"></div>
+    <div class="field" style="margin-bottom:16px;"><label>${t('b2bNeeds')}</label><textarea rows="4"></textarea></div>
+    <button class="btn btn-primary" onclick="showToast(t('b2bSent'))">${t('b2bSend')}</button>
+  </div>`;
+}
+
+let adminTab = 'orders';
+function importCatalogCsv(){
+  const input = document.getElementById('csvImport');
+  if(!input) return;
+  const lines = input.value.split(/\n+/).map(l=>l.trim()).filter(Boolean);
+  if(lines.length===0){ showToast(t('adminImportEmpty')); return; }
+  const rows = lines.slice(1).map(line=>line.split(',').map(cell=>cell.trim())).filter(r=>r.length>=3);
+  state.catalogImports = rows.map(([name, category, price])=>({name, category, price: Number(price)||0}));
+  persistState();
+  render();
+  showToast(t('adminImportSummary').replace('{x}', String(state.catalogImports.length)));
+}
+
+function viewAdmin(){
+  const tabs = [['orders',t('adminOrders')],['catalog',t('adminCatalog')],['reviews',t('adminReviews')],['loyalty',t('adminLoyalty')]];
+  const statusLabel = s => s==='prep'?t('statusPrep'): s==='route'?t('statusRoute'): t('statusDone');
+  let body = '';
+  if(adminTab==='orders'){
+    body = `<table><thead><tr><th>${t('colOrder')}</th><th>${t('colClient')}</th><th>${t('colZone')}</th><th>${t('colTotal')}</th><th>${t('colStatus')}</th></tr></thead>
+    <tbody>${state.orders.map(o=>`<tr><td>${o.id}</td><td>${o.client}</td><td>${o.zone[state.lang]}</td><td>${fmt(o.total)}</td><td><span class="status-pill ${o.status}">${statusLabel(o.status)}</span></td></tr>`).join('')}</tbody></table>`;
+  } else if(adminTab==='catalog'){
+    body = `<table><thead><tr><th>${t('catalogTitle')}</th><th>${t('colTotal')}</th><th>Stock</th></tr></thead>
+    <tbody>${PRODUCTS.map(p=>`<tr><td>${p.name[state.lang]}</td><td>${fmt(p.oldPrice||p.price)}</td><td>${20+Math.floor(Math.random()*40)}</td></tr>`).join('')}</tbody></table>
+    <div class="b2b-box" style="margin-top:16px;max-width:100%;">
+      <h4 style="margin:0 0 8px;">${t('adminImportTitle')}</h4>
+      <p style="font-size:13px;color:var(--ink-soft);margin:0 0 10px;">${t('adminImportHint')}</p>
+      <textarea id="csvImport" rows="4" placeholder="Nom,Catégorie,Prix\nTensiomètre,Diagnostic,21000"></textarea>
+      <button class="btn btn-outline" style="margin-top:10px;" onclick="importCatalogCsv()">${t('adminImportBtn')}</button>
+      ${state.catalogImports.length ? `<div style="margin-top:12px;font-size:13px;color:var(--ink-soft);">${state.catalogImports.map(item=>`<div>• ${item.name} — ${item.category} — ${fmt(item.price)}</div>`).join('')}</div>` : ''}
+    </div>`;
+  } else if(adminTab==='reviews'){
+    const all = Object.entries(MOCK_REVIEWS).flatMap(([pid,rs])=>rs.map(r=>({...r,product:product(pid).name[state.lang]})));
+    body = `<table><thead><tr><th>${t('catalogTitle')}</th><th>${t('colClient')}</th><th>Note</th></tr></thead>
+    <tbody>${all.map(r=>`<tr><td>${r.product}</td><td>${r.name}</td><td>${'★'.repeat(r.rating)}</td></tr>`).join('')}</tbody></table>`;
+  } else if(adminTab==='loyalty'){
+    body = `<p style="font-size:13.5px;color:var(--ink-soft);">${state.lang==='fr'?'Votre solde (simulation client courant) :':'Your balance (current customer simulation):'} <strong style="color:var(--forest)">${state.loyaltyPoints}/10</strong></p>`;
+  }
+  return `
+  <div class="page-header"><h1>${t('adminTitle')}</h1></div>
+  <div class="role-note">${t('adminRoleNote')}</div>
+  <div class="admin-shell">
+    <div class="admin-nav">${tabs.map(([k,l])=>`<a href="#" class="${adminTab===k?'active':''}" onclick="adminTab='${k}';render();return false;">${l}</a>`).join('')}</div>
+    <div class="admin-panel">${body}</div>
+  </div>`;
+}
+
+/* ---------------- master render ---------------- */
+function render(){
+  renderTopChrome();
+  const views = {
+    home: viewHome, catalog: viewCatalog, product: viewProduct,
+    cart: viewCart, checkout: viewCheckout, confirm: viewConfirm,
+    about: viewAbout, b2b: viewB2b, admin: viewAdmin,
+  };
+  document.getElementById('app').innerHTML = (views[state.view] || viewHome)();
+}
+
+render();
+</script>
+</body>
+</html>

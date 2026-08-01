@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400" role="img" aria-label="Thermomètre infrarouge">
+  <defs>
+    <linearGradient id="g-p9" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#a16207" stop-opacity=".12"/>
+      <stop offset="100%" stop-color="#a16207" stop-opacity=".28"/>
+    </linearGradient>
+  </defs>
+  <rect width="400" height="400" fill="url(#g-p9)"/>
+  <g color="#a16207" opacity=".9"><rect x="182" y="112" width="36" height="150" rx="18" fill="none" stroke="currentColor" stroke-width="12"/><circle cx="200" cy="288" r="34" fill="none" stroke="currentColor" stroke-width="12"/><circle cx="200" cy="288" r="14" fill="currentColor"/><path d="M200 156v100" stroke="currentColor" stroke-width="12" stroke-linecap="round"/></g>
+  <g opacity=".55">
+    <rect x="330" y="26" width="44" height="12" rx="6" fill="#a16207"/>
+    <rect x="346" y="10" width="12" height="44" rx="6" fill="#a16207"/>
+  </g>
+  <text x="200" y="368" text-anchor="middle" font-family="system-ui,-apple-system,Segoe UI,sans-serif" font-size="19" font-weight="600" fill="#a16207" opacity=".8">Thermomètre infrarouge</text>
+</svg>

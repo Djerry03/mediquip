@@ -1,0 +1,104 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  api:
+    name: API — types, tests, migration
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: mediquip_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      POSTGRES_HOST: localhost
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: mediquip_test
+      JWT_SECRET: ci-secret-de-test-suffisamment-long-pour-passer
+      CORS_ORIGINS: http://localhost:3004
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci --legacy-peer-deps
+
+      - name: Compilation
+        run: npm --workspace apps/api run build
+
+      - name: Tests unitaires
+        run: npm --workspace apps/api run test
+
+      # Une migration qui ne s'applique pas sur une base vierge est une
+      # migration cassée : on le découvre ici, pas en production.
+      - name: Migrations sur base vierge
+        working-directory: apps/api
+        run: npm run migration:run
+
+  web:
+    name: Frontend — types et build
+    runs-on: ubuntu-latest
+
+    env:
+      NEXT_PUBLIC_API_URL: http://localhost:4000/api
+      NEXT_PUBLIC_SITE_URL: http://localhost:3004
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci --legacy-peer-deps
+
+      - name: Vérification des types
+        run: npx tsc --noEmit -p apps/web/tsconfig.json
+
+      - name: Build Next.js
+        run: npm --workspace apps/web run build
+
+  secrets:
+    name: Aucun secret commité
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: .env absent du dépôt
+        run: |
+          if git ls-files --error-unmatch .env >/dev/null 2>&1; then
+            echo "::error::Le fichier .env est suivi par git. Retirez-le : git rm --cached .env"
+            exit 1
+          fi
+
+      # Une variable NEXT_PUBLIC_* est inlinée dans le bundle envoyé au
+      # navigateur : y placer un mot de passe revient à le publier.
+      - name: Aucun secret exposé via NEXT_PUBLIC_
+        run: |
+          if grep -rInE 'NEXT_PUBLIC_[A-Z_]*(PASSWORD|SECRET|TOKEN|KEY)' \
+               --include='*.ts' --include='*.tsx' --include='*.js' \
+               --exclude-dir=node_modules --exclude-dir=.next . ; then
+            echo "::error::Un secret est exposé via une variable NEXT_PUBLIC_."
+            exit 1
+          fi

@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400" role="img" aria-label="Oxymètre de pouls">
+  <defs>
+    <linearGradient id="g-p8" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#c2410c" stop-opacity=".12"/>
+      <stop offset="100%" stop-color="#c2410c" stop-opacity=".28"/>
+    </linearGradient>
+  </defs>
+  <rect width="400" height="400" fill="url(#g-p8)"/>
+  <g color="#c2410c" opacity=".9"><rect x="140" y="150" width="120" height="140" rx="22" fill="none" stroke="currentColor" stroke-width="12"/><path d="M164 214h20l12-24 16 48 12-30 10 18h22" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><rect x="176" y="262" width="48" height="12" rx="6" fill="currentColor" opacity=".6"/></g>
+  <g opacity=".55">
+    <rect x="330" y="26" width="44" height="12" rx="6" fill="#c2410c"/>
+    <rect x="346" y="10" width="12" height="44" rx="6" fill="#c2410c"/>
+  </g>
+  <text x="200" y="368" text-anchor="middle" font-family="system-ui,-apple-system,Segoe UI,sans-serif" font-size="19" font-weight="600" fill="#c2410c" opacity=".8">Oxymètre de pouls</text>
+</svg>
