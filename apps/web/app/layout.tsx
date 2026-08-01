@@ -6,6 +6,7 @@ import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import WhatsAppFloat from './components/WhatsAppFloat';
 import Toast from './components/Toast';
+import AnimatedMain from './components/AnimatedMain';
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3004';
 
@@ -45,7 +46,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <AuthProvider>
           <AppProvider>
             <Navbar />
-            <main className="main-content">{children}</main>
+            <AnimatedMain>{children}</AnimatedMain>
             <Footer />
             <WhatsAppFloat />
             <Toast />

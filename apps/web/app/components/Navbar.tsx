@@ -1,13 +1,36 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { formatFcfa, useApp } from '../context/AppContext';
+import { useBanners } from './Banner';
 
 export default function Navbar() {
   const pathname = usePathname();
   const { lang, setLang, cartCount, deliveryRules } = useApp();
+  const campaigns = useBanners('top_strip');
+  const headerRef = useRef<HTMLElement>(null);
+  const prevCount = useRef(cartCount);
+  const badgeRef = useRef<HTMLSpanElement>(null);
+
+  useEffect(() => {
+    const onScroll = () => {
+      headerRef.current?.classList.toggle('scrolled', window.scrollY > 8);
+    };
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  useEffect(() => {
+    if (cartCount > prevCount.current && badgeRef.current) {
+      badgeRef.current.classList.remove('pop');
+      void badgeRef.current.offsetWidth;
+      badgeRef.current.classList.add('pop');
+    }
+    prevCount.current = cartCount;
+  }, [cartCount]);
 
   const t = {
     fr: {
@@ -58,24 +81,55 @@ export default function Navbar() {
 
   return (
     <>
-      <div className="strip">
-        <span>
-          <span className="cross" style={{ width: 11, height: 11 }}></span>
-          {t.strip1}
-        </span>
-        {francoLabel && (
+      {/*
+        Une campagne en cours prend la place des messages permanents : c'est
+        le levier marketing du bandeau. Sans campagne, on retombe sur les
+        arguments de vente par défaut.
+      */}
+      {campaigns.length > 0 ? (
+        <div
+          className="strip strip-campaign"
+          style={{
+            background: campaigns[0].backgroundColor || undefined,
+            color: campaigns[0].textColor || undefined,
+          }}
+        >
+          {campaigns.map((banner) => {
+            const content = (
+              <>
+                <span className="cross" style={{ width: 11, height: 11 }}></span>
+                {banner.title[lang]}
+              </>
+            );
+            return banner.ctaUrl ? (
+              <Link key={banner.id} href={banner.ctaUrl as any} className="strip-link">
+                {content}
+              </Link>
+            ) : (
+              <span key={banner.id}>{content}</span>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="strip">
           <span>
             <span className="cross" style={{ width: 11, height: 11 }}></span>
-            {francoLabel}
+            {t.strip1}
           </span>
-        )}
-        <span>
-          <span className="cross" style={{ width: 11, height: 11 }}></span>
-          {t.strip3}
-        </span>
-      </div>
+          {francoLabel && (
+            <span>
+              <span className="cross" style={{ width: 11, height: 11 }}></span>
+              {francoLabel}
+            </span>
+          )}
+          <span>
+            <span className="cross" style={{ width: 11, height: 11 }}></span>
+            {t.strip3}
+          </span>
+        </div>
+      )}
 
-      <header className="site">
+      <header className="site" ref={headerRef}>
         <div className="topbar">
           <Link className="logo" href="/">
             <span className="cross"></span> Mediquipe
@@ -109,7 +163,11 @@ export default function Navbar() {
 
             <Link href={"/cart" as any} className="icon-btn">
               🛒 <span>{t.cart}</span>
-              {cartCount > 0 && <span className="badge-count">{cartCount}</span>}
+              {cartCount > 0 && (
+                <span className="badge-count" ref={badgeRef}>
+                  {cartCount}
+                </span>
+              )}
             </Link>
           </div>
         </div>

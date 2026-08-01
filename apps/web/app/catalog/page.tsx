@@ -3,6 +3,8 @@
 import React, { useMemo, useState } from 'react';
 import { useApp } from '../context/AppContext';
 import ProductCard from '../components/ProductCard';
+import Reveal from '../components/Reveal';
+import Banner from '../components/Banner';
 
 const PACK_CATEGORY_KEYS = ['Packs médicaux', 'Medical packs'];
 
@@ -77,6 +79,8 @@ export default function CatalogPage() {
         <h1>{t.catalogTitle}</h1>
       </div>
 
+      <Banner placement="catalog_top" />
+
       <div className="filters">
         <div className="search-box">
           🔎{' '}
@@ -121,7 +125,11 @@ export default function CatalogPage() {
       ) : (
         <div className="grid-products">
           {filtered.length > 0 ? (
-            filtered.map((p) => <ProductCard key={p.id} p={p} />)
+            filtered.map((p, i) => (
+              <Reveal key={p.id} delay={(i % 8) * 50}>
+                <ProductCard p={p} />
+              </Reveal>
+            ))
           ) : (
             <p style={{ gridColumn: '1/-1', color: 'var(--ink-soft)' }}>{t.empty}</p>
           )}

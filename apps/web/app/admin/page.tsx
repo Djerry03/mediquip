@@ -1,20 +1,29 @@
 'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { formatFcfa, useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
 import { apiFetch, ApiError, API_URL, getToken } from '../lib/api';
+import { ORDER_STATUS_LABELS, OrderStatus, PAYMENT_STATUS_LABELS } from '../lib/order-status';
+import ProductForm from './ProductForm';
+import PromotionForm from './PromotionForm';
+import BannerForm from './BannerForm';
+import CsvPanel from './CsvPanel';
 import {
-  ORDER_STATUS_LABELS,
-  OrderStatus,
-  PAYMENT_STATUS_LABELS,
-} from '../lib/order-status';
+  AdminOrder,
+  AdminProduct,
+  Banner,
+  BANNER_PLACEMENTS,
+  PrescriptionRequest,
+  Promotion,
+  Review,
+} from './types';
 
 /**
  * Transitions autorisées — miroir de la machine à états de l'API.
- * L'API reste seule juge : cette table ne fait qu'éviter de proposer
- * un bouton qui serait de toute façon refusé.
+ * L'API reste seule juge : cette table évite seulement de proposer un
+ * bouton qui serait de toute façon refusé.
  */
 const NEXT_STATUSES: Record<OrderStatus, OrderStatus[]> = {
   pending: ['confirmed', 'cancelled'],
@@ -26,152 +35,44 @@ const NEXT_STATUSES: Record<OrderStatus, OrderStatus[]> = {
   returned: [],
 };
 
-type Order = {
-  id: string;
-  client: string;
-  phone: string;
-  address: string;
-  total: number;
-  status: OrderStatus;
-  paymentStatus: keyof typeof PAYMENT_STATUS_LABELS;
-  mode_reception: 'livraison' | 'retrait';
-  code_retrait?: string;
-  point_repere_client?: string;
-  requiresPrescription: boolean;
-  prescriptionVerified: boolean;
-  createdAt: string;
-  items: { name: string; qty: number }[];
-};
+type Tab = 'orders' | 'catalog' | 'promotions' | 'banners' | 'reviews' | 'prescriptions';
 
-type Product = {
-  id: string;
-  name: { fr: string; en: string };
-  price: number;
-  oldPrice?: number;
-  actif: boolean;
-  necessite_ordonnance: boolean;
-  livraison_autorisee: boolean;
+const TAB_LABELS: Record<Tab, { fr: string; en: string }> = {
+  orders: { fr: 'Commandes', en: 'Orders' },
+  catalog: { fr: 'Catalogue', en: 'Catalog' },
+  promotions: { fr: 'Codes promo', en: 'Promo codes' },
+  banners: { fr: 'Bannières', en: 'Banners' },
+  reviews: { fr: 'Avis', en: 'Reviews' },
+  prescriptions: { fr: 'Ordonnances', en: 'Prescriptions' },
 };
-
-type Promotion = {
-  id: string;
-  code: string;
-  type: 'percent' | 'fixed' | 'free_shipping';
-  value: number;
-  minAmount: number;
-  redemptions: number;
-  maxRedemptions: number;
-  expiresAt?: string;
-  active: boolean;
-};
-
-type Review = {
-  id: string;
-  productId: string;
-  authorName: string;
-  rating: number;
-  comment: string;
-  createdAt: string;
-};
-
-type Tab = 'orders' | 'catalog' | 'promotions' | 'reviews' | 'prescriptions';
 
 export default function AdminPage() {
   const { lang, showToast } = useApp();
   const { user, loading: authLoading, isAdmin } = useAuth();
 
   const [tab, setTab] = useState<Tab>('orders');
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [statusFilter, setStatusFilter] = useState<string>('');
-  const [search, setSearch] = useState('');
-  const [products, setProducts] = useState<Product[]>([]);
-  const [promotions, setPromotions] = useState<Promotion[]>([]);
-  const [reviews, setReviews] = useState<Review[]>([]);
-  const [prescriptions, setPrescriptions] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [newPromo, setNewPromo] = useState({
-    code: '',
-    type: 'percent' as Promotion['type'],
-    value: 10,
-    minAmount: 0,
-  });
+  const [orders, setOrders] = useState<AdminOrder[]>([]);
+  const [statusFilter, setStatusFilter] = useState('');
+  const [search, setSearch] = useState('');
 
-  const t = {
-    fr: {
-      title: 'Back-office',
-      denied: 'Cette page est réservée aux administrateurs.',
-      signIn: 'Se connecter',
-      loading: 'Chargement…',
-      tabs: {
-        orders: 'Commandes',
-        catalog: 'Catalogue',
-        promotions: 'Codes promo',
-        reviews: 'Avis à modérer',
-        prescriptions: 'Ordonnances',
-      },
-      allStatuses: 'Tous les statuts',
-      searchPh: 'N° commande, nom ou téléphone…',
-      noOrders: 'Aucune commande.',
-      verifyPrescription: 'Marquer l’ordonnance vérifiée',
-      prescriptionPending: '⚠️ Ordonnance à vérifier',
-      prescriptionOk: '✓ Ordonnance vérifiée',
-      pickup: 'Retrait',
-      delivery: 'Livraison',
-      code: 'Code',
-      noProducts: 'Aucun produit.',
-      active: 'Actif',
-      inactive: 'Désactivé',
-      deactivate: 'Désactiver',
-      newPromo: 'Nouveau code promo',
-      create: 'Créer',
-      disable: 'Désactiver',
-      uses: 'utilisations',
-      noPromos: 'Aucun code promo.',
-      noReviews: 'Aucun avis en attente.',
-      publish: 'Publier',
-      reject: 'Rejeter',
-      noPrescriptions: 'Aucune demande.',
-      download: 'Voir le document',
-    },
-    en: {
-      title: 'Back office',
-      denied: 'This page is restricted to administrators.',
-      signIn: 'Sign in',
-      loading: 'Loading…',
-      tabs: {
-        orders: 'Orders',
-        catalog: 'Catalog',
-        promotions: 'Promo codes',
-        reviews: 'Reviews to moderate',
-        prescriptions: 'Prescriptions',
-      },
-      allStatuses: 'All statuses',
-      searchPh: 'Order no., name or phone…',
-      noOrders: 'No order.',
-      verifyPrescription: 'Mark prescription verified',
-      prescriptionPending: '⚠️ Prescription to verify',
-      prescriptionOk: '✓ Prescription verified',
-      pickup: 'Pickup',
-      delivery: 'Delivery',
-      code: 'Code',
-      noProducts: 'No product.',
-      active: 'Active',
-      inactive: 'Disabled',
-      deactivate: 'Disable',
-      newPromo: 'New promo code',
-      create: 'Create',
-      disable: 'Disable',
-      uses: 'uses',
-      noPromos: 'No promo code.',
-      noReviews: 'No pending review.',
-      publish: 'Publish',
-      reject: 'Reject',
-      noPrescriptions: 'No request.',
-      download: 'View document',
-    },
-  }[lang];
+  const [products, setProducts] = useState<AdminProduct[]>([]);
+  const [categories, setCategories] = useState<{ fr: string; en: string }[]>([]);
+  const [catalogSearch, setCatalogSearch] = useState('');
+  const [showInactive, setShowInactive] = useState(true);
+  const [csvOpen, setCsvOpen] = useState(false);
+
+  const [promotions, setPromotions] = useState<Promotion[]>([]);
+  const [banners, setBanners] = useState<Banner[]>([]);
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [prescriptions, setPrescriptions] = useState<PrescriptionRequest[]>([]);
+
+  // `undefined` = pas de modale ; `null` = modale en création.
+  const [editingProduct, setEditingProduct] = useState<AdminProduct | null | undefined>(undefined);
+  const [editingPromo, setEditingPromo] = useState<Promotion | null | undefined>(undefined);
+  const [editingBanner, setEditingBanner] = useState<Banner | null | undefined>(undefined);
 
   const load = useCallback(async () => {
     if (!isAdmin) return;
@@ -183,21 +84,32 @@ export default function AdminPage() {
           const query = new URLSearchParams();
           if (statusFilter) query.set('status', statusFilter);
           if (search) query.set('search', search);
-          const res = await apiFetch<{ items: Order[] }>(`/orders/admin?${query}`, { auth: true });
+          const res = await apiFetch<{ items: AdminOrder[] }>(`/orders/admin?${query}`, {
+            auth: true,
+          });
           setOrders(res.items);
           break;
         }
-        case 'catalog':
-          setProducts(await apiFetch<Product[]>('/products/admin', { auth: true }));
+        case 'catalog': {
+          const [list, cats] = await Promise.all([
+            apiFetch<AdminProduct[]>('/products/admin', { auth: true }),
+            apiFetch<{ fr: string; en: string }[]>('/products/admin/categories', { auth: true }),
+          ]);
+          setProducts(list);
+          setCategories(cats);
           break;
+        }
         case 'promotions':
           setPromotions(await apiFetch<Promotion[]>('/promotions', { auth: true }));
+          break;
+        case 'banners':
+          setBanners(await apiFetch<Banner[]>('/banners/admin', { auth: true }));
           break;
         case 'reviews':
           setReviews(await apiFetch<Review[]>('/reviews/pending', { auth: true }));
           break;
         case 'prescriptions':
-          setPrescriptions(await apiFetch<any[]>('/prescriptions', { auth: true }));
+          setPrescriptions(await apiFetch<PrescriptionRequest[]>('/prescriptions', { auth: true }));
           break;
       }
     } catch (err) {
@@ -211,10 +123,19 @@ export default function AdminPage() {
     load();
   }, [load]);
 
+  const act = async (fn: () => Promise<unknown>, successMessage: string) => {
+    try {
+      await fn();
+      showToast(successMessage);
+      load();
+    } catch (err) {
+      showToast(err instanceof ApiError ? err.message : 'Erreur');
+    }
+  };
+
   /**
    * Le document d'ordonnance est protégé par le jeton : un `<a href>` simple
-   * n'enverrait pas l'en-tête Authorization. On le récupère donc en fetch,
-   * puis on l'ouvre depuis une URL blob éphémère.
+   * n'enverrait pas l'en-tête Authorization.
    */
   const openPrescriptionFile = async (id: string) => {
     try {
@@ -227,33 +148,50 @@ export default function AdminPage() {
       window.open(url, '_blank', 'noopener');
       setTimeout(() => URL.revokeObjectURL(url), 60_000);
     } catch {
-      showToast(lang === 'fr' ? 'Document indisponible.' : 'Document unavailable.');
+      showToast('Document indisponible.');
     }
   };
 
-  const act = async (fn: () => Promise<unknown>, successMessage: string) => {
-    try {
-      await fn();
-      showToast(successMessage);
-      load();
-    } catch (err) {
-      showToast(err instanceof ApiError ? err.message : 'Erreur');
+  const visibleProducts = useMemo(() => {
+    const needle = catalogSearch.trim().toLowerCase();
+    return products.filter((p) => {
+      if (!showInactive && !p.actif) return false;
+      if (!needle) return true;
+      return (
+        p.id.includes(needle) ||
+        p.name.fr.toLowerCase().includes(needle) ||
+        p.cat.fr.toLowerCase().includes(needle)
+      );
+    });
+  }, [products, catalogSearch, showInactive]);
+
+  const bannerStatus = (b: Banner): { label: string; tone: string } => {
+    if (!b.active) return { label: 'Désactivée', tone: 'off' };
+    const now = Date.now();
+    if (b.startsAt && new Date(b.startsAt).getTime() > now) {
+      return {
+        label: `Programmée — ${new Date(b.startsAt).toLocaleString('fr-FR')}`,
+        tone: 'scheduled',
+      };
     }
+    if (b.endsAt && new Date(b.endsAt).getTime() < now) return { label: 'Terminée', tone: 'off' };
+    return { label: 'En ligne', tone: 'live' };
   };
 
   // ------------------------------------------------------------- Accès
+
   if (authLoading) {
-    return <p style={{ marginTop: 32, color: 'var(--ink-soft)' }}>{t.loading}</p>;
+    return <p style={{ marginTop: 32, color: 'var(--ink-soft)' }}>Chargement…</p>;
   }
 
   // L'autorisation réelle est appliquée par l'API sur chaque requête ;
-  // ce garde-fou évite simplement d'afficher une coquille vide.
+  // ce garde-fou évite seulement d'afficher une coquille vide.
   if (!user || !isAdmin) {
     return (
       <div style={{ marginTop: 32 }}>
-        <div className="alert alert-warn">{t.denied}</div>
+        <div className="alert alert-warn">Cette page est réservée aux administrateurs.</div>
         <Link href={'/account' as any} className="btn btn-primary" style={{ marginTop: 12 }}>
-          {t.signIn}
+          Se connecter
         </Link>
       </div>
     );
@@ -262,24 +200,20 @@ export default function AdminPage() {
   return (
     <>
       <div className="page-header">
-        <h1>{t.title}</h1>
+        <h1>Back-office</h1>
         <span className="cart-line-meta">{user.email}</span>
       </div>
 
       <nav className="admin-tabs">
-        {(Object.keys(t.tabs) as Tab[]).map((key) => (
-          <button
-            key={key}
-            className={tab === key ? 'active' : ''}
-            onClick={() => setTab(key)}
-          >
-            {t.tabs[key]}
+        {(Object.keys(TAB_LABELS) as Tab[]).map((key) => (
+          <button key={key} className={tab === key ? 'active' : ''} onClick={() => setTab(key)}>
+            {TAB_LABELS[key][lang]}
           </button>
         ))}
       </nav>
 
       {error && <div className="alert alert-error">{error}</div>}
-      {loading && <p style={{ color: 'var(--ink-soft)' }}>{t.loading}</p>}
+      {loading && <p style={{ color: 'var(--ink-soft)' }}>Chargement…</p>}
 
       {/* ------------------------------------------------------ Commandes */}
       {tab === 'orders' && !loading && (
@@ -289,13 +223,13 @@ export default function AdminPage() {
               🔎
               <input
                 type="search"
-                placeholder={t.searchPh}
+                placeholder="N° commande, nom ou téléphone…"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
             </div>
             <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-              <option value="">{t.allStatuses}</option>
+              <option value="">Tous les statuts</option>
               {(Object.keys(ORDER_STATUS_LABELS) as OrderStatus[]).map((s) => (
                 <option key={s} value={s}>
                   {ORDER_STATUS_LABELS[s][lang]}
@@ -305,7 +239,7 @@ export default function AdminPage() {
           </div>
 
           {orders.length === 0 ? (
-            <p style={{ color: 'var(--ink-soft)' }}>{t.noOrders}</p>
+            <p style={{ color: 'var(--ink-soft)' }}>Aucune commande.</p>
           ) : (
             <div className="order-list">
               {orders.map((o) => (
@@ -315,14 +249,12 @@ export default function AdminPage() {
                     <span className={`status-pill status-${o.status}`}>
                       {ORDER_STATUS_LABELS[o.status][lang]}
                     </span>
-                    <span className="badge">
-                      {PAYMENT_STATUS_LABELS[o.paymentStatus]?.[lang]}
-                    </span>
+                    <span className="badge">{PAYMENT_STATUS_LABELS[o.paymentStatus]?.[lang]}</span>
                   </div>
 
                   <span className="cart-line-meta">
                     {o.client} · {o.phone} ·{' '}
-                    {o.mode_reception === 'retrait' ? t.pickup : t.delivery} · {o.address}
+                    {o.mode_reception === 'retrait' ? 'Retrait' : 'Livraison'} · {o.address}
                     {o.point_repere_client ? ` (${o.point_repere_client})` : ''}
                   </span>
                   <span className="cart-line-meta">
@@ -330,13 +262,15 @@ export default function AdminPage() {
                   </span>
                   {o.code_retrait && (
                     <span className="badge">
-                      {t.code} : <code>{o.code_retrait}</code>
+                      Code : <code>{o.code_retrait}</code>
                     </span>
                   )}
 
                   {o.requiresPrescription && (
                     <div className={`alert ${o.prescriptionVerified ? 'alert-info' : 'alert-warn'}`}>
-                      {o.prescriptionVerified ? t.prescriptionOk : t.prescriptionPending}
+                      {o.prescriptionVerified
+                        ? '✓ Ordonnance vérifiée'
+                        : '⚠️ Ordonnance à vérifier avant confirmation'}
                       {!o.prescriptionVerified && (
                         <button
                           className="btn btn-outline"
@@ -348,11 +282,11 @@ export default function AdminPage() {
                                   method: 'PATCH',
                                   auth: true,
                                 }),
-                              t.prescriptionOk,
+                              'Ordonnance vérifiée.',
                             )
                           }
                         >
-                          {t.verifyPrescription}
+                          Marquer vérifiée
                         </button>
                       )}
                     </div>
@@ -389,145 +323,219 @@ export default function AdminPage() {
 
       {/* ------------------------------------------------------- Catalogue */}
       {tab === 'catalog' && !loading && (
-        <div className="admin-table-wrap">
-          <table className="admin-table">
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>{lang === 'fr' ? 'Nom' : 'Name'}</th>
-                <th>{lang === 'fr' ? 'Prix' : 'Price'}</th>
-                <th>{lang === 'fr' ? 'Statut' : 'Status'}</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {products.map((p) => (
-                <tr key={p.id}>
-                  <td>
-                    <code>{p.id}</code>
-                  </td>
-                  <td>
-                    {p.name.fr}
-                    {p.necessite_ordonnance && ' 📋'}
-                    {!p.livraison_autorisee && ' 🏪'}
-                  </td>
-                  <td>
-                    {formatFcfa(p.price)}
-                    {p.oldPrice && p.oldPrice > p.price && (
-                      <s style={{ color: 'var(--ink-soft)', marginLeft: 6 }}>
-                        {formatFcfa(p.oldPrice)}
-                      </s>
-                    )}
-                  </td>
-                  <td>{p.actif ? t.active : t.inactive}</td>
-                  <td>
-                    {p.actif && (
-                      <button
-                        className="link-danger"
-                        onClick={() =>
-                          act(
-                            () => apiFetch(`/products/${p.id}`, { method: 'DELETE', auth: true }),
-                            `${p.id} ${t.inactive.toLowerCase()}`,
-                          )
-                        }
-                      >
-                        {t.deactivate}
-                      </button>
-                    )}
-                  </td>
+        <>
+          <div className="filters">
+            <div className="search-box">
+              🔎
+              <input
+                type="search"
+                placeholder="Nom, identifiant ou catégorie…"
+                value={catalogSearch}
+                onChange={(e) => setCatalogSearch(e.target.value)}
+              />
+            </div>
+            <label className="checkbox-row" style={{ fontSize: 13 }}>
+              <input
+                type="checkbox"
+                checked={showInactive}
+                onChange={(e) => setShowInactive(e.target.checked)}
+              />
+              Afficher les désactivés
+            </label>
+            <button className="btn btn-ghost" onClick={() => setCsvOpen((v) => !v)}>
+              {csvOpen ? 'Masquer' : 'Import / export CSV'}
+            </button>
+            <button className="btn btn-dark" onClick={() => setEditingProduct(null)}>
+              ＋ Nouveau produit
+            </button>
+          </div>
+
+          {csvOpen && <CsvPanel onImported={load} notify={showToast} />}
+
+          <p className="cart-line-meta" style={{ marginBottom: 8 }}>
+            {visibleProducts.length} produit(s) sur {products.length}
+          </p>
+
+          <div className="admin-table-wrap">
+            <table className="admin-table">
+              <thead>
+                <tr>
+                  <th></th>
+                  <th>Produit</th>
+                  <th>Catégorie</th>
+                  <th>Prix</th>
+                  <th>Avis</th>
+                  <th>Statut</th>
+                  <th></th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-          {products.length === 0 && <p style={{ color: 'var(--ink-soft)' }}>{t.noProducts}</p>}
-        </div>
+              </thead>
+              <tbody>
+                {visibleProducts.map((p) => (
+                  <tr key={p.id} className={p.actif ? '' : 'row-muted'}>
+                    <td>
+                      <div className="thumb">
+                        {p.images?.[0] ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={`${API_URL.replace(/\/api$/, '')}${p.images[0]}`} alt="" />
+                        ) : (
+                          <span>✚</span>
+                        )}
+                      </div>
+                    </td>
+                    <td>
+                      <strong>{p.name.fr}</strong>
+                      <br />
+                      <code className="cart-line-meta">{p.id}</code>
+                      {p.necessite_ordonnance && <span className="badge">📋 ordonnance</span>}
+                      {!p.livraison_autorisee && <span className="badge">🏪 retrait</span>}
+                      {p.necessite_chaine_froid && <span className="badge">❄️ froid</span>}
+                    </td>
+                    <td>{p.cat.fr}</td>
+                    <td>
+                      {formatFcfa(p.price)}
+                      {p.oldPrice && p.oldPrice > p.price && (
+                        <>
+                          <br />
+                          <s className="cart-line-meta">{formatFcfa(p.oldPrice)}</s>
+                        </>
+                      )}
+                    </td>
+                    <td>
+                      {p.reviews > 0 ? `${p.rating.toFixed(1)} ★ (${p.reviews})` : '—'}
+                    </td>
+                    <td>{p.actif ? 'Actif' : 'Désactivé'}</td>
+                    <td className="row-actions">
+                      <button className="link" onClick={() => setEditingProduct(p)}>
+                        Modifier
+                      </button>
+                      {p.actif ? (
+                        <button
+                          className="link-danger"
+                          onClick={() =>
+                            act(
+                              () => apiFetch(`/products/${p.id}`, { method: 'DELETE', auth: true }),
+                              `${p.name.fr} retiré du catalogue.`,
+                            )
+                          }
+                        >
+                          Désactiver
+                        </button>
+                      ) : (
+                        <>
+                          <button
+                            className="link"
+                            onClick={() =>
+                              act(
+                                () =>
+                                  apiFetch(`/products/${p.id}/reactivate`, {
+                                    method: 'PATCH',
+                                    auth: true,
+                                  }),
+                                `${p.name.fr} remis en vente.`,
+                              )
+                            }
+                          >
+                            Réactiver
+                          </button>
+                          <button
+                            className="link-danger"
+                            onClick={() => {
+                              if (
+                                confirm(
+                                  `Supprimer définitivement « ${p.name.fr} » ? Cette action est irréversible et n’est possible que si le produit n’a jamais été commandé.`,
+                                )
+                              ) {
+                                act(
+                                  () =>
+                                    apiFetch(`/products/${p.id}/permanent`, {
+                                      method: 'DELETE',
+                                      auth: true,
+                                    }),
+                                  `${p.name.fr} supprimé.`,
+                                );
+                              }
+                            }}
+                          >
+                            Supprimer
+                          </button>
+                        </>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
 
       {/* ------------------------------------------------------ Promotions */}
       {tab === 'promotions' && !loading && (
         <>
-          <form
-            className="admin-inline-form"
-            onSubmit={(e) => {
-              e.preventDefault();
-              act(
-                () =>
-                  apiFetch('/promotions', {
-                    method: 'POST',
-                    auth: true,
-                    body: JSON.stringify(newPromo),
-                  }),
-                `${newPromo.code} créé`,
-              );
-              setNewPromo({ code: '', type: 'percent', value: 10, minAmount: 0 });
-            }}
-          >
-            <strong>{t.newPromo}</strong>
-            <input
-              required
-              placeholder="MEDI10"
-              value={newPromo.code}
-              onChange={(e) => setNewPromo({ ...newPromo, code: e.target.value.toUpperCase() })}
-            />
-            <select
-              value={newPromo.type}
-              onChange={(e) =>
-                setNewPromo({ ...newPromo, type: e.target.value as Promotion['type'] })
-              }
-            >
-              <option value="percent">%</option>
-              <option value="fixed">FCFA</option>
-              <option value="free_shipping">
-                {lang === 'fr' ? 'Livraison offerte' : 'Free shipping'}
-              </option>
-            </select>
-            <input
-              type="number"
-              min={0}
-              value={newPromo.value}
-              onChange={(e) => setNewPromo({ ...newPromo, value: Number(e.target.value) })}
-            />
-            <input
-              type="number"
-              min={0}
-              placeholder={lang === 'fr' ? 'Montant min.' : 'Min amount'}
-              value={newPromo.minAmount}
-              onChange={(e) => setNewPromo({ ...newPromo, minAmount: Number(e.target.value) })}
-            />
-            <button className="btn btn-dark">{t.create}</button>
-          </form>
+          <div className="filters">
+            <button className="btn btn-dark" onClick={() => setEditingPromo(null)}>
+              ＋ Nouveau code promo
+            </button>
+          </div>
 
           {promotions.length === 0 ? (
-            <p style={{ color: 'var(--ink-soft)' }}>{t.noPromos}</p>
+            <p style={{ color: 'var(--ink-soft)' }}>Aucun code promo.</p>
           ) : (
             <div className="admin-table-wrap">
               <table className="admin-table">
                 <thead>
                   <tr>
-                    <th>{t.code}</th>
-                    <th>Type</th>
-                    <th>{lang === 'fr' ? 'Valeur' : 'Value'}</th>
-                    <th>{lang === 'fr' ? 'Min.' : 'Min.'}</th>
-                    <th>{t.uses}</th>
-                    <th>{lang === 'fr' ? 'Statut' : 'Status'}</th>
+                    <th>Code</th>
+                    <th>Remise</th>
+                    <th>Conditions</th>
+                    <th>Période</th>
+                    <th>Utilisations</th>
+                    <th>Statut</th>
                     <th></th>
                   </tr>
                 </thead>
                 <tbody>
                   {promotions.map((p) => (
-                    <tr key={p.id}>
+                    <tr key={p.id} className={p.active ? '' : 'row-muted'}>
                       <td>
                         <code>{p.code}</code>
                       </td>
-                      <td>{p.type}</td>
-                      <td>{p.type === 'percent' ? `${p.value} %` : formatFcfa(p.value)}</td>
-                      <td>{p.minAmount ? formatFcfa(p.minAmount) : '—'}</td>
+                      <td>
+                        {p.type === 'percent'
+                          ? `−${p.value} %`
+                          : p.type === 'fixed'
+                            ? `−${formatFcfa(p.value)}`
+                            : 'Livraison offerte'}
+                        {p.maxDiscount > 0 && (
+                          <>
+                            <br />
+                            <span className="cart-line-meta">max {formatFcfa(p.maxDiscount)}</span>
+                          </>
+                        )}
+                      </td>
+                      <td>
+                        {p.minAmount > 0 ? `dès ${formatFcfa(p.minAmount)}` : 'sans minimum'}
+                        <br />
+                        <span className="cart-line-meta">
+                          {p.maxPerCustomer > 0
+                            ? `${p.maxPerCustomer}× par client`
+                            : 'sans compte requis'}
+                        </span>
+                      </td>
+                      <td className="cart-line-meta">
+                        {p.startsAt ? new Date(p.startsAt).toLocaleDateString('fr-FR') : '—'}
+                        {' → '}
+                        {p.expiresAt ? new Date(p.expiresAt).toLocaleDateString('fr-FR') : '∞'}
+                      </td>
                       <td>
                         {p.redemptions}
                         {p.maxRedemptions ? ` / ${p.maxRedemptions}` : ''}
                       </td>
-                      <td>{p.active ? t.active : t.inactive}</td>
-                      <td>
+                      <td>{p.active ? 'Actif' : 'Suspendu'}</td>
+                      <td className="row-actions">
+                        <button className="link" onClick={() => setEditingPromo(p)}>
+                          Modifier
+                        </button>
                         {p.active && (
                           <button
                             className="link-danger"
@@ -538,11 +546,11 @@ export default function AdminPage() {
                                     method: 'DELETE',
                                     auth: true,
                                   }),
-                                `${p.code} ${t.inactive.toLowerCase()}`,
+                                `${p.code} suspendu.`,
                               )
                             }
                           >
-                            {t.disable}
+                            Suspendre
                           </button>
                         )}
                       </td>
@@ -555,11 +563,118 @@ export default function AdminPage() {
         </>
       )}
 
-      {/* ----------------------------------------------------------- Avis */}
+      {/* -------------------------------------------------------- Bannières */}
+      {tab === 'banners' && !loading && (
+        <>
+          <div className="filters">
+            <button className="btn btn-dark" onClick={() => setEditingBanner(null)}>
+              ＋ Nouvelle bannière
+            </button>
+          </div>
+
+          <p className="cart-line-meta" style={{ marginBottom: 12 }}>
+            Les bannières s’affichent automatiquement pendant leur période de diffusion. Aucune
+            intervention n’est nécessaire pour les retirer à la date de fin.
+          </p>
+
+          {banners.length === 0 ? (
+            <p style={{ color: 'var(--ink-soft)' }}>
+              Aucune bannière. Le bandeau du site affiche alors ses messages par défaut.
+            </p>
+          ) : (
+            <div className="banner-list">
+              {banners.map((b) => {
+                const status = bannerStatus(b);
+                const placement = BANNER_PLACEMENTS.find((p) => p.value === b.placement);
+                return (
+                  <div className={`banner-card tone-${status.tone}`} key={b.id}>
+                    <div className="banner-card-head">
+                      <strong>{b.name}</strong>
+                      <span className={`status-pill banner-${status.tone}`}>{status.label}</span>
+                      <span className="badge">{placement?.fr ?? b.placement}</span>
+                      {b.priority > 0 && <span className="badge">priorité {b.priority}</span>}
+                    </div>
+
+                    <div
+                      className={b.placement === 'top_strip' ? 'preview-strip' : 'preview-hero'}
+                      style={{
+                        background: b.backgroundColor || 'var(--forest)',
+                        color: b.textColor || '#fff',
+                      }}
+                    >
+                      {b.placement === 'top_strip' ? (
+                        <>
+                          <span className="cross" style={{ width: 11, height: 11 }} />
+                          {b.title.fr}
+                        </>
+                      ) : (
+                        <>
+                          <strong>{b.title.fr}</strong>
+                          {b.subtitle && <span>{b.subtitle.fr}</span>}
+                          {b.ctaLabel && (
+                            <span
+                              className="preview-cta"
+                              style={{ color: b.backgroundColor || 'var(--forest)' }}
+                            >
+                              {b.ctaLabel.fr}
+                            </span>
+                          )}
+                        </>
+                      )}
+                    </div>
+
+                    <span className="cart-line-meta">
+                      {b.startsAt
+                        ? `Du ${new Date(b.startsAt).toLocaleString('fr-FR')}`
+                        : 'Sans date de début'}
+                      {' · '}
+                      {b.endsAt
+                        ? `jusqu’au ${new Date(b.endsAt).toLocaleString('fr-FR')}`
+                        : 'sans date de fin'}
+                    </span>
+
+                    <div className="order-card-foot">
+                      <button className="link" onClick={() => setEditingBanner(b)}>
+                        Modifier
+                      </button>
+                      <button
+                        className="link"
+                        onClick={() =>
+                          act(
+                            () => apiFetch(`/banners/${b.id}/toggle`, { method: 'PATCH', auth: true }),
+                            b.active ? `« ${b.name} » désactivée.` : `« ${b.name} » activée.`,
+                          )
+                        }
+                      >
+                        {b.active ? 'Désactiver' : 'Activer'}
+                      </button>
+                      <button
+                        className="link-danger"
+                        onClick={() => {
+                          if (confirm(`Supprimer la bannière « ${b.name} » ?`)) {
+                            act(
+                              () => apiFetch(`/banners/${b.id}`, { method: 'DELETE', auth: true }),
+                              `« ${b.name} » supprimée.`,
+                            );
+                          }
+                        }}
+                      >
+                        Supprimer
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </>
+      )}
+
+      {/* ------------------------------------------------------------ Avis */}
       {tab === 'reviews' && !loading && (
         <>
           {reviews.length === 0 ? (
-            <p style={{ color: 'var(--ink-soft)' }}>{t.noReviews}</p>
+            <p style={{ color: 'var(--ink-soft)' }}>Aucun avis en attente de modération.</p>
           ) : (
             <div className="order-list">
               {reviews.map((r) => (
@@ -584,11 +699,11 @@ export default function AdminPage() {
                               auth: true,
                               body: JSON.stringify({ status: 'published' }),
                             }),
-                          t.publish,
+                          'Avis publié.',
                         )
                       }
                     >
-                      {t.publish}
+                      Publier
                     </button>
                     <button
                       className="link-danger"
@@ -600,11 +715,11 @@ export default function AdminPage() {
                               auth: true,
                               body: JSON.stringify({ status: 'rejected' }),
                             }),
-                          t.reject,
+                          'Avis rejeté.',
                         )
                       }
                     >
-                      {t.reject}
+                      Rejeter
                     </button>
                   </div>
                 </div>
@@ -618,7 +733,7 @@ export default function AdminPage() {
       {tab === 'prescriptions' && !loading && (
         <>
           {prescriptions.length === 0 ? (
-            <p style={{ color: 'var(--ink-soft)' }}>{t.noPrescriptions}</p>
+            <p style={{ color: 'var(--ink-soft)' }}>Aucune demande de devis.</p>
           ) : (
             <div className="order-list">
               {prescriptions.map((p) => (
@@ -630,12 +745,12 @@ export default function AdminPage() {
                   <span className="cart-line-meta">
                     {p.phone}
                     {p.email ? ` · ${p.email}` : ''} ·{' '}
-                    {new Date(p.createdAt).toLocaleString(lang === 'fr' ? 'fr-FR' : 'en-GB')}
+                    {new Date(p.createdAt).toLocaleString('fr-FR')}
                   </span>
                   {p.note && <p>{p.note}</p>}
                   <div className="order-card-foot">
                     <button className="link" onClick={() => openPrescriptionFile(p.id)}>
-                      {t.download} →
+                      Voir le document →
                     </button>
                   </div>
                 </div>
@@ -643,6 +758,35 @@ export default function AdminPage() {
             </div>
           )}
         </>
+      )}
+
+      {/* ---------------------------------------------------------- Modales */}
+      {editingProduct !== undefined && (
+        <ProductForm
+          product={editingProduct}
+          categories={categories}
+          onClose={() => setEditingProduct(undefined)}
+          onSaved={load}
+          notify={showToast}
+        />
+      )}
+
+      {editingPromo !== undefined && (
+        <PromotionForm
+          promotion={editingPromo}
+          onClose={() => setEditingPromo(undefined)}
+          onSaved={load}
+          notify={showToast}
+        />
+      )}
+
+      {editingBanner !== undefined && (
+        <BannerForm
+          banner={editingBanner}
+          onClose={() => setEditingBanner(undefined)}
+          onSaved={load}
+          notify={showToast}
+        />
       )}
     </>
   );

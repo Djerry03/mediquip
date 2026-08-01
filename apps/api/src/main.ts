@@ -8,7 +8,9 @@ dotenv.config({ path: resolve(process.cwd(), '.env') });
 
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import helmet from 'helmet';
+import { resolve as resolvePath } from 'path';
 import { AppModule } from './app.module';
 
 function parseOrigins(raw?: string): string[] {
@@ -20,9 +22,31 @@ function parseOrigins(raw?: string): string[] {
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
-  const app = await NestFactory.create(AppModule, { bodyParser: true });
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, { bodyParser: true });
+
+  // L'import CSV transite dans le corps de la requête : la limite par défaut
+  // d'Express (100 ko) est trop basse pour un catalogue complet.
+  app.useBodyParser('json', { limit: '3mb' });
 
   app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
+
+  /**
+   * Médias téléversés depuis le back-office (visuels produits, bannières).
+   * Servis en lecture seule, hors du dossier des ordonnances qui, lui, reste
+   * derrière une authentification. `setGlobalPrefix` ne s'applique pas aux
+   * fichiers statiques : le préfixe est donc explicite ici.
+   */
+  app.useStaticAssets(resolvePath(process.cwd(), 'uploads', 'media'), {
+    prefix: '/api/uploads/',
+    index: false,
+    dotfiles: 'deny',
+    maxAge: '7d',
+    setHeaders: (res) => {
+      // Un SVG ou un HTML déguisé ne doit jamais s'exécuter dans le domaine du site.
+      res.setHeader('Content-Security-Policy', "default-src 'none'; img-src 'self'");
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+    },
+  });
 
   // CORS restreint aux origines déclarées. En développement, si rien n'est
   // configuré, on autorise le front local plutôt que le web entier.

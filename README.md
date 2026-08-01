@@ -51,7 +51,8 @@ défini par `ADMIN_EMAIL` / `ADMIN_PASSWORD`.
 ```
 apps/api/src
 ├── auth/           inscription, connexion JWT, guards et rôles
-├── products/       catalogue public + administration + stock
+├── products/       catalogue public + administration, images, stock, CSV
+├── marketing/      bannières et bandeaux programmés
 ├── orders/         création transactionnelle, machine à états, réservation de stock
 ├── delivery/       zones, quartiers, boutiques, calcul des frais de livraison
 ├── payments/       statut de paiement, fournisseurs (manual, MTN MoMo), webhooks
@@ -87,6 +88,48 @@ directement.
 **Aucune interface ne fabrique de données.** Si l'API est injoignable, le
 frontend affiche une erreur — il n'invente ni commande, ni numéro de suivi, ni
 catalogue de secours.
+
+---
+
+## Back-office
+
+Accessible aux comptes `admin` via **Mon compte → Accéder au back-office**.
+Six onglets, tous branchés sur l'API : rien n'y est simulé.
+
+**Commandes** — filtrage par statut et recherche, avancement du statut selon les
+transitions autorisées, vérification d'ordonnance bloquante.
+
+**Catalogue** — création, modification et retrait des produits. Chaque fiche
+règle le prix et le prix barré, les étiquettes de vignette, les contraintes
+logistiques (fragile, chaîne du froid, retrait obligatoire, ordonnance), les
+visuels et le stock par boutique.
+
+- Les **visuels** sont téléversés depuis l'interface. Le format annoncé est
+  recoupé avec la signature binaire du fichier, et le premier visuel sert de
+  vignette au catalogue.
+- Un produit **désactivé** disparaît du site mais reste lisible dans
+  l'historique des commandes. La **suppression définitive** n'est possible que
+  pour un produit jamais commandé — l'API refuse le reste.
+- L'**import/export CSV** permet de travailler le catalogue dans un tableur.
+  Un mode « vérifier sans rien modifier » compte les créations et mises à jour
+  avant d'écrire, et les lignes fautives sont signalées avec leur numéro sans
+  bloquer le reste du fichier.
+
+**Codes promo** — pourcentage, montant fixe ou livraison offerte, avec panier
+minimum, plafond de remise, quota global, limite par client et fenêtre de
+validité. Un exemple chiffré montre l'effet du code sur un panier type.
+
+**Bannières** — bandeau haut de page, bannière d'accueil, encart catalogue et
+encart panier. Chaque bannière a ses textes bilingues, ses couleurs, son bouton,
+sa priorité et sa **fenêtre de diffusion** : elle apparaît et disparaît seule aux
+dates choisies. Un aperçu montre le rendu avant publication. Sans campagne
+active, le bandeau retombe sur les arguments de vente par défaut.
+
+**Avis** — modération avant publication ; la note du produit est recalculée à
+partir des seuls avis publiés.
+
+**Ordonnances** — demandes de devis reçues, avec accès au document (authentifié,
+servi en pièce jointe).
 
 ---
 
@@ -133,8 +176,8 @@ schéma n'évolue que par migration.
 
 ### Reste à faire avant l'ouverture au public
 
-- [ ] Remplacer les visuels produits de `apps/web/public/products/` (SVG
-      génériques) par de vraies photos.
+- [ ] Remplacer les visuels produits génériques par de vraies photos, depuis
+      le back-office (onglet Catalogue → Modifier → Visuels).
 - [ ] Compléter les pages légales (`apps/web/app/legal/`) : les mentions entre
       crochets doivent être renseignées et le tout relu par un juriste — la
       vente de dispositifs médicaux est une activité réglementée.
@@ -143,5 +186,6 @@ schéma n'évolue que par migration.
 - [ ] Configurer un vrai SMTP (`NOTIFICATION_TRANSPORT=smtp`) et renseigner
       `OPS_NOTIFICATION_EMAIL` : sans cela, personne n'est prévenu qu'un colis
       est à préparer.
-- [ ] Sauvegarder le volume `prescriptions` (documents de santé) et la base.
+- [ ] Sauvegarder la base ainsi que les volumes `prescriptions` (documents de
+      santé) et `uploads/media` (visuels téléversés).
 - [ ] Mettre en place la supervision des erreurs et la rotation des journaux.

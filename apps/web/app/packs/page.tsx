@@ -3,6 +3,7 @@
 import React from 'react';
 import { useApp } from '../context/AppContext';
 import ProductCard from '../components/ProductCard';
+import Reveal from '../components/Reveal';
 
 export default function PacksPage() {
   const { lang, products } = useApp();
@@ -36,7 +37,11 @@ export default function PacksPage() {
 
       <div className="grid-products" style={{ marginTop: '2rem' }}>
         {medicalPacks.length > 0 ? (
-          medicalPacks.map((pack) => <ProductCard key={pack.id} p={pack} />)
+          medicalPacks.map((pack, i) => (
+            <Reveal key={pack.id} delay={(i % 8) * 50}>
+              <ProductCard p={pack} />
+            </Reveal>
+          ))
         ) : (
           <p style={{ gridColumn: '1/-1', color: 'var(--ink-soft)', textAlign: 'center' }}>
             {t.noPacks}

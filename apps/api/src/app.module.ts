@@ -14,6 +14,7 @@ import { PromotionsModule } from './promotions/promotions.module';
 import { ReviewsModule } from './reviews/reviews.module';
 import { PrescriptionsModule } from './prescriptions/prescriptions.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { MarketingModule } from './marketing/marketing.module';
 
 import { ENTITIES } from './entities';
 import { validateEnv } from './config/env.validation';
@@ -54,6 +55,7 @@ import { validateEnv } from './config/env.validation';
     ReviewsModule,
     PrescriptionsModule,
     NotificationsModule,
+    MarketingModule,
     SeedModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],

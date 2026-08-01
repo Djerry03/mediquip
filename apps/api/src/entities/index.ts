@@ -1,3 +1,4 @@
+import { BannerEntity } from './banner.entity';
 import { BoutiqueEntity } from './boutique.entity';
 import { OrderEntity } from './order.entity';
 import { PaymentEntity } from './payment.entity';
@@ -15,6 +16,7 @@ import { ZoneEntity } from './zone.entity';
 
 /** Liste unique des entités — référencée par TypeORM et par la datasource CLI. */
 export const ENTITIES = [
+  BannerEntity,
   BoutiqueEntity,
   OrderEntity,
   PaymentEntity,
@@ -32,6 +34,7 @@ export const ENTITIES = [
 ];
 
 export {
+  BannerEntity,
   BoutiqueEntity,
   OrderEntity,
   PaymentEntity,

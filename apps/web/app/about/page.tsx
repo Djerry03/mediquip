@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { useApp } from '../context/AppContext';
+import Reveal from '../components/Reveal';
 
 export default function AboutPage() {
   const { lang } = useApp();
@@ -37,18 +38,18 @@ export default function AboutPage() {
       </div>
 
       <div className="about-grid">
-        <div className="about-card">
-          <h4>{t.aboutMissionT}</h4>
-          <p>{t.aboutMissionP}</p>
-        </div>
-        <div className="about-card">
-          <h4>{t.aboutTeamT}</h4>
-          <p>{t.aboutTeamP}</p>
-        </div>
-        <div className="about-card">
-          <h4>{t.aboutVisionT}</h4>
-          <p>{t.aboutVisionP}</p>
-        </div>
+        {[
+          { title: t.aboutMissionT, text: t.aboutMissionP },
+          { title: t.aboutTeamT, text: t.aboutTeamP },
+          { title: t.aboutVisionT, text: t.aboutVisionP },
+        ].map((card, i) => (
+          <Reveal key={card.title} delay={i * 80}>
+            <div className="about-card">
+              <h4>{card.title}</h4>
+              <p>{card.text}</p>
+            </div>
+          </Reveal>
+        ))}
       </div>
     </>
   );

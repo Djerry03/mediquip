@@ -5,6 +5,8 @@ import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { useApp } from './context/AppContext';
 import ProductCard from './components/ProductCard';
+import Reveal from './components/Reveal';
+import Banner from './components/Banner';
 
 const MapSimulator = dynamic(() => import('./components/MapSimulator'), { ssr: false });
 
@@ -56,6 +58,9 @@ export default function HomePage() {
 
   return (
     <>
+      {/* Campagnes en cours, pilotées depuis le back-office. */}
+      <Banner placement="home_hero" />
+
       <section className="hero">
         <div className="hero-copy">
           <div className="eyebrow">
@@ -73,18 +78,20 @@ export default function HomePage() {
           </div>
         </div>
 
-        <div style={{ color: '#000', minWidth: '320px' }}>
+        <div className="hero-aside" style={{ color: '#000', minWidth: '320px' }}>
           <MapSimulator />
         </div>
       </section>
 
       <section className="section">
-        <div className="section-head">
-          <h2>{t.featured}</h2>
-          <Link href="/catalog" className="link">
-            {t.featuredLink} →
-          </Link>
-        </div>
+        <Reveal>
+          <div className="section-head">
+            <h2>{t.featured}</h2>
+            <Link href="/catalog" className="link">
+              {t.featuredLink} →
+            </Link>
+          </div>
+        </Reveal>
         {productsError ? (
           <div className="alert alert-error">{productsError}</div>
         ) : productsLoading ? (
@@ -93,46 +100,38 @@ export default function HomePage() {
           </p>
         ) : (
           <div className="grid-products">
-            {featured.map((p) => (
-              <ProductCard key={p.id} p={p} />
+            {featured.map((p, i) => (
+              <Reveal key={p.id} delay={i * 60}>
+                <ProductCard p={p} />
+              </Reveal>
             ))}
           </div>
         )}
       </section>
 
       <section className="section">
-        <div className="section-head">
-          <h2>{t.trustTitle}</h2>
-        </div>
+        <Reveal>
+          <div className="section-head">
+            <h2>{t.trustTitle}</h2>
+          </div>
+        </Reveal>
         <div className="trust">
-          <div className="trust-item">
-            <span className="cross"></span>
-            <div>
-              <h4>{t.t1t}</h4>
-              <p>{t.t1p}</p>
-            </div>
-          </div>
-          <div className="trust-item">
-            <span className="cross"></span>
-            <div>
-              <h4>{t.t2t}</h4>
-              <p>{t.t2p}</p>
-            </div>
-          </div>
-          <div className="trust-item">
-            <span className="cross"></span>
-            <div>
-              <h4>{t.t3t}</h4>
-              <p>{t.t3p}</p>
-            </div>
-          </div>
-          <div className="trust-item">
-            <span className="cross"></span>
-            <div>
-              <h4>{t.t4t}</h4>
-              <p>{t.t4p}</p>
-            </div>
-          </div>
+          {[
+            { t: t.t1t, p: t.t1p },
+            { t: t.t2t, p: t.t2p },
+            { t: t.t3t, p: t.t3p },
+            { t: t.t4t, p: t.t4p },
+          ].map((item, i) => (
+            <Reveal key={item.t} delay={i * 70}>
+              <div className="trust-item">
+                <span className="cross"></span>
+                <div>
+                  <h4>{item.t}</h4>
+                  <p>{item.p}</p>
+                </div>
+              </div>
+            </Reveal>
+          ))}
         </div>
       </section>
     </>

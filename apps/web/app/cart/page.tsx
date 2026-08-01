@@ -4,6 +4,7 @@ import React, { useMemo } from 'react';
 import Link from 'next/link';
 import { formatFcfa, useApp } from '../context/AppContext';
 import { ProductMedia } from '../components/ProductCard';
+import Banner from '../components/Banner';
 
 export default function CartPage() {
   const { lang, cart, updateQty, removeFromCart, findProduct, productsLoading, deliveryRules } =
@@ -132,6 +133,8 @@ export default function CartPage() {
         </div>
 
         <aside className="cart-summary">
+          <Banner placement="cart_notice" />
+
           <div className="summary-row">
             <span>{t.subtotal}</span>
             <strong>{formatFcfa(subtotal)}</strong>
