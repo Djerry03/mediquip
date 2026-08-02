@@ -9,7 +9,7 @@ export default function robots(): MetadataRoute.Robots {
       allow: '/',
       // Ces pages sont personnelles ou transactionnelles : les indexer
       // n'apporte rien et exposerait des URL de suivi dans les moteurs.
-      disallow: ['/admin', '/account', '/checkout', '/cart', '/tracking'],
+      disallow: ['/admin', '/account', '/checkout', '/cart', '/tracking', '/desinscription'],
     },
     sitemap: `${SITE_URL}/sitemap.xml`,
   };

@@ -1,5 +1,6 @@
 import { Transform } from 'class-transformer';
 import {
+  IsBoolean,
   IsEmail,
   IsNotEmpty,
   IsOptional,
@@ -33,6 +34,11 @@ export class RegisterDto {
   @Matches(PHONE_REGEX, { message: 'Numéro de téléphone camerounais invalide.' })
   @Transform(({ value }) => String(value ?? '').replace(/[\s.-]/g, ''))
   phone?: string;
+
+  /** Consentement aux e-mails commerciaux. Faux tant que la case n'est pas cochée. */
+  @IsOptional()
+  @IsBoolean()
+  newsletterOptIn?: boolean;
 }
 
 export class LoginDto {
@@ -68,6 +74,10 @@ export class UpdateProfileDto {
   @IsString()
   @MaxLength(300)
   defaultPointRepere?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  newsletterOptIn?: boolean;
 }
 
 export class ChangePasswordDto {

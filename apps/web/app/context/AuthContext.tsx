@@ -11,6 +11,7 @@ export type User = {
   role: 'customer' | 'admin';
   defaultQuartierId?: string;
   defaultPointRepere?: string;
+  newsletterOptIn: boolean;
 };
 
 type AuthContextType = {
@@ -24,6 +25,7 @@ type AuthContextType = {
     password: string;
     fullName: string;
     phone?: string;
+    newsletterOptIn?: boolean;
   }) => Promise<User>;
   logout: () => void;
   updateProfile: (patch: Partial<User>) => Promise<User>;
@@ -74,7 +76,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const register = useCallback(
-    async (input: { email: string; password: string; fullName: string; phone?: string }) => {
+    async (input: {
+      email: string;
+      password: string;
+      fullName: string;
+      phone?: string;
+      newsletterOptIn?: boolean;
+    }) => {
       const res = await apiFetch<{ token: string; user: User }>('/auth/register', {
         method: 'POST',
         body: JSON.stringify(input),

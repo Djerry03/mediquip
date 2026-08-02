@@ -41,6 +41,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     products = [];
   }
 
+  // Les pages de campagne en cours sont indexables tant qu'elles sont
+  // diffusées ; elles disparaissent du plan du site à leur expiration.
+  let campaignSlugs: string[] = [];
+  try {
+    // Pas de cache : une campagne dépubliée doit quitter le plan du site
+    // aussi vite qu'elle quitte le site lui-même.
+    const res = await fetch(`${API_URL}/campaign-pages/live`, { cache: 'no-store' });
+    if (res.ok) campaignSlugs = await res.json();
+  } catch {
+    campaignSlugs = [];
+  }
+
   return [
     ...staticEntries,
     ...products.map((p) => ({
@@ -48,6 +60,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: now,
       changeFrequency: 'weekly' as const,
       priority: 0.8,
+    })),
+    ...campaignSlugs.map((slug) => ({
+      url: `${SITE_URL}/promo/${slug}`,
+      lastModified: now,
+      changeFrequency: 'daily' as const,
+      priority: 0.7,
     })),
   ];
 }

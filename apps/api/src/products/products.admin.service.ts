@@ -215,6 +215,59 @@ export class ProductsAdminService {
     );
   }
 
+  // ------------------------------------------------------- Mise en avant
+
+  /** Produits actuellement mis en avant, dans l'ordre choisi. */
+  featured(): Promise<ProductEntity[]> {
+    return this.products
+      .createQueryBuilder('p')
+      .where('p."featuredRank" IS NOT NULL')
+      .orderBy('p."featuredRank"', 'ASC')
+      .getMany();
+  }
+
+  /**
+   * Remplace la sélection par la liste fournie, dans l'ordre.
+   * Une liste vide rend la main au tri automatique de l'accueil.
+   */
+  async setFeatured(productIds: string[]): Promise<ProductEntity[]> {
+    if (productIds.length > 12) {
+      throw new BadRequestException('Douze produits en vedette au maximum.');
+    }
+
+    const found = await this.products.find({ where: { id: In(productIds) } });
+    const missing = productIds.filter((id) => !found.some((p) => p.id === id));
+    if (missing.length > 0) {
+      throw new BadRequestException(`Produit introuvable : ${missing.join(', ')}.`);
+    }
+
+    const inactive = found.filter((p) => !p.actif);
+    if (inactive.length > 0) {
+      throw new BadRequestException(
+        `Un produit désactivé ne peut pas être mis en avant : ${inactive
+          .map((p) => p.name.fr)
+          .join(', ')}.`,
+      );
+    }
+
+    await this.dataSource.transaction(async (manager) => {
+      // On repart d'une ardoise vierge : sinon un produit retiré de la
+      // sélection garderait son rang et resterait affiché.
+      await manager
+        .createQueryBuilder()
+        .update(ProductEntity)
+        .set({ featuredRank: null })
+        .where('"featuredRank" IS NOT NULL')
+        .execute();
+
+      for (const [index, id] of productIds.entries()) {
+        await manager.update(ProductEntity, { id }, { featuredRank: index });
+      }
+    });
+
+    return this.featured();
+  }
+
   // ----------------------------------------------------------------- CSV
 
   async exportCsv(): Promise<string> {

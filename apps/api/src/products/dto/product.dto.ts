@@ -230,6 +230,14 @@ export class ReorderImagesDto {
   images: string[];
 }
 
+export class SetFeaturedDto {
+  /** Identifiants dans l'ordre d'affichage souhaité. Vide = tri automatique. */
+  @IsArray()
+  @ArrayMaxSize(12)
+  @IsString({ each: true })
+  productIds: string[];
+}
+
 export class ImportCsvDto {
   @IsString()
   @IsNotEmpty({ message: 'Le fichier CSV est vide.' })

@@ -23,6 +23,7 @@ import {
   CreateProductDto,
   ImportCsvDto,
   ReorderImagesDto,
+  SetFeaturedDto,
   UpdateProductDto,
 } from './dto/product.dto';
 import { JwtAuthGuard, Roles, RolesGuard } from '../auth/guards';
@@ -47,6 +48,12 @@ export class ProductsController {
   @Get()
   findAll(): Promise<ProductEntity[]> {
     return this.products.findAll();
+  }
+
+  /** Sélection vedette de l'accueil, manuelle ou automatique par défaut. */
+  @Get('featured')
+  findFeatured(@Query('limit') limit?: string) {
+    return this.products.findFeatured(limit ? Math.min(12, Number(limit) || 4) : 4);
   }
 
   // --------------------------------------------------------- Back-office
@@ -86,6 +93,20 @@ export class ProductsController {
   @Post('admin/import')
   importCsv(@Body() dto: ImportCsvDto) {
     return this.admin.importCsv(dto.content, dto.dryRun === true);
+  }
+
+  @AdminOnly()
+  @Roles(UserRole.ADMIN)
+  @Get('admin/featured')
+  featured() {
+    return this.admin.featured();
+  }
+
+  @AdminOnly()
+  @Roles(UserRole.ADMIN)
+  @Patch('admin/featured')
+  setFeatured(@Body() dto: SetFeaturedDto) {
+    return this.admin.setFeatured(dto.productIds);
   }
 
   @AdminOnly()

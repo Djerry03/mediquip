@@ -52,7 +52,7 @@ défini par `ADMIN_EMAIL` / `ADMIN_PASSWORD`.
 apps/api/src
 ├── auth/           inscription, connexion JWT, guards et rôles
 ├── products/       catalogue public + administration, images, stock, CSV
-├── marketing/      bannières et bandeaux programmés
+├── marketing/      bannières, pages de campagne, campagnes e-mail
 ├── orders/         création transactionnelle, machine à états, réservation de stock
 ├── delivery/       zones, quartiers, boutiques, calcul des frais de livraison
 ├── payments/       statut de paiement, fournisseurs (manual, MTN MoMo), webhooks
@@ -94,7 +94,7 @@ catalogue de secours.
 ## Back-office
 
 Accessible aux comptes `admin` via **Mon compte → Accéder au back-office**.
-Six onglets, tous branchés sur l'API : rien n'y est simulé.
+Neuf onglets, tous branchés sur l'API : rien n'y est simulé.
 
 **Commandes** — filtrage par statut et recherche, avancement du statut selon les
 transitions autorisées, vérification d'ordonnance bloquante.
@@ -115,6 +115,10 @@ visuels et le stock par boutique.
   avant d'écrire, et les lignes fautives sont signalées avec leur numéro sans
   bloquer le reste du fichier.
 
+**Vedettes** — sélection manuelle et ordonnée des produits mis en avant sur
+l'accueil. Sans sélection, l'accueil retombe sur un tri automatique par
+étiquette : il n'est jamais vide.
+
 **Codes promo** — pourcentage, montant fixe ou livraison offerte, avec panier
 minimum, plafond de remise, quota global, limite par client et fenêtre de
 validité. Un exemple chiffré montre l'effet du code sur un panier type.
@@ -124,6 +128,30 @@ encart panier. Chaque bannière a ses textes bilingues, ses couleurs, son bouton
 sa priorité et sa **fenêtre de diffusion** : elle apparaît et disparaît seule aux
 dates choisies. Un aperçu montre le rendu avant publication. Sans campagne
 active, le bandeau retombe sur les arguments de vente par défaut.
+
+**Pages promo** — pages de campagne autonomes publiées sur `/promo/<adresse>`,
+avec titre, accroche, paragraphes bilingues, sélection ordonnée de produits,
+code promo rappelé et description pour les moteurs de recherche. Le contenu est
+structuré, jamais du HTML libre : une page alimentée par du HTML saisi au
+back-office serait un vecteur d'injection sur tout le site. Ces pages sont
+rendues à chaque requête, sans cache, pour qu'une dépublication prenne effet
+immédiatement.
+
+**Campagnes e-mail** — rédaction, envoi d'essai, puis envoi par lots à une
+audience : tous les inscrits, les clients ayant déjà acheté, ou les dormants
+sans commande depuis 90 jours.
+
+- Le **consentement** est la règle : aucune campagne ne part vers un client
+  qui n'a pas coché « recevoir nos offres » à l'inscription ou dans son compte.
+  Les audiences ne font que restreindre cet ensemble déjà consenti. La date du
+  consentement est conservée comme preuve.
+- Le **lien de désinscription** est ajouté par le serveur, pas saisi à la main :
+  il est impossible d'envoyer une campagne sans lui. La désinscription se fait
+  en un clic, sans connexion, et est idempotente.
+- Une campagne **envoyée devient immuable** : on la duplique plutôt que de la
+  réécrire, sinon le journal d'envoi mentirait.
+- Les e-mails **liés aux commandes** (confirmation, suivi) ne dépendent pas du
+  consentement : ce sont des messages transactionnels, pas de la prospection.
 
 **Avis** — modération avant publication ; la note du produit est recalculée à
 partir des seuls avis publiés.
@@ -183,6 +211,9 @@ schéma n'évolue que par migration.
       vente de dispositifs médicaux est une activité réglementée.
 - [ ] Souscrire un contrat marchand Mobile Money et basculer
       `PAYMENT_PROVIDER=momo`.
+- [ ] Configurer le SMTP avant d'envoyer une campagne e-mail : avec
+      `NOTIFICATION_TRANSPORT=log`, les messages ne partent pas, ils sont
+      seulement écrits dans les journaux.
 - [ ] Configurer un vrai SMTP (`NOTIFICATION_TRANSPORT=smtp`) et renseigner
       `OPS_NOTIFICATION_EMAIL` : sans cela, personne n'est prévenu qu'un colis
       est à préparer.

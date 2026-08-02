@@ -64,4 +64,12 @@ export class ProductEntity {
   /** Un produit inactif reste en base mais disparaît du catalogue public. */
   @Column({ type: 'boolean', default: true })
   actif: boolean;
+
+  /**
+   * Position dans la sélection « produits vedettes » de l'accueil.
+   * `null` = non sélectionné. Quand aucun produit n'est positionné, la page
+   * d'accueil retombe sur son tri automatique par étiquette.
+   */
+  @Column({ type: 'int', nullable: true })
+  featuredRank?: number | null;
 }

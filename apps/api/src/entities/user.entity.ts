@@ -47,6 +47,26 @@ export class UserEntity {
   @Column({ type: 'text', nullable: true })
   defaultPointRepere?: string;
 
+  /**
+   * Consentement explicite aux e-mails commerciaux. Faux par défaut : le
+   * client doit cocher la case, jamais la décocher. Les e-mails liés à une
+   * commande (confirmation, changement de statut) ne dépendent pas de ce
+   * champ — ce sont des messages transactionnels, pas de la prospection.
+   */
+  @Column({ type: 'boolean', default: false })
+  newsletterOptIn: boolean;
+
+  @Column({ type: 'timestamptz', nullable: true })
+  newsletterOptInAt?: Date;
+
+  /**
+   * Jeton du lien de désinscription. Permet de se désabonner en un clic
+   * depuis l'e-mail, sans se connecter.
+   */
+  @Index({ unique: true })
+  @Column({ nullable: true })
+  unsubscribeToken?: string;
+
   @CreateDateColumn({ type: 'timestamptz' })
   createdAt: Date;
 

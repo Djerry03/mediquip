@@ -2376,3 +2376,177 @@ a.campaign-banner:hover { filter: brightness(1.05); }
   .modal { max-height: 100vh; border-radius: 0; }
   .modal-head { border-radius: 0; }
 }
+
+/* =========================================================================
+   Marketing : audiences, mise en avant, pages de campagne.
+   ========================================================================= */
+
+/* ---- Campagnes e-mail ---- */
+.audience-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.audience-card {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 14px;
+  display: grid;
+  gap: 3px;
+}
+.audience-card strong { font-size: 26px; color: var(--forest-dark); line-height: 1.1; }
+.audience-card span { font-size: 13.5px; font-weight: 600; }
+.audience-card small { font-size: 11.5px; color: var(--ink-soft); }
+
+.campaign-excerpt {
+  font-size: 13px;
+  color: var(--ink-soft);
+  background: var(--sage-bg);
+  border-radius: 8px;
+  padding: 10px 12px;
+  white-space: pre-wrap;
+  max-height: 5.5em;
+  overflow: hidden;
+  margin: 0;
+}
+
+/* ---- Mise en avant ---- */
+.featured-layout {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 20px;
+  align-items: start;
+}
+.featured-column {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 16px;
+  display: grid;
+  gap: 12px;
+  align-content: start;
+}
+.featured-column h3 { font-size: 14px; margin: 0; }
+
+.featured-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+  counter-reset: featured;
+}
+.featured-list.available { max-height: 420px; overflow-y: auto; }
+.featured-list.compact { max-height: 220px; }
+.featured-list li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 8px 10px;
+  background: var(--paper);
+}
+.featured-rank {
+  width: 24px;
+  height: 24px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--forest);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+}
+.featured-info { flex: 1; display: grid; gap: 1px; min-width: 0; }
+.featured-info strong {
+  font-size: 13.5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.featured-actions { display: flex; gap: 4px; flex: none; }
+.featured-actions button {
+  border: 1px solid var(--line);
+  background: var(--paper);
+  border-radius: 7px;
+  width: 28px;
+  height: 28px;
+  font-size: 13px;
+  cursor: pointer;
+  color: var(--ink);
+}
+.featured-actions button:disabled { opacity: .35; cursor: not-allowed; }
+.featured-actions button.danger { color: var(--danger); border-color: #F0C8BF; }
+
+.paragraph-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 8px;
+  align-items: start;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px;
+  margin-bottom: 8px;
+}
+.paragraph-row .link-danger { grid-column: 1 / -1; justify-self: end; }
+
+/* ---- Page de campagne publique ---- */
+.promo-hero {
+  border-radius: var(--radius);
+  padding: 44px 32px;
+  margin: 20px 0 8px;
+  display: grid;
+  gap: 10px;
+  justify-items: start;
+  background-size: cover;
+  background-position: center;
+}
+.promo-hero h1 { font-size: 34px; margin: 0; line-height: 1.15; }
+.promo-subtitle { font-size: 16px; opacity: .94; margin: 0; }
+
+.promo-code-box {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  background: rgba(255, 255, 255, .16);
+  border: 1px dashed currentColor;
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin-top: 6px;
+}
+.promo-code-label { font-size: 11.5px; text-transform: uppercase; letter-spacing: .06em; }
+.promo-code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: .1em;
+}
+.promo-copy {
+  background: #fff;
+  border: 0;
+  border-radius: 7px;
+  padding: 5px 12px;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.promo-apply { font-size: 12px; opacity: .88; }
+
+.promo-body {
+  max-width: 70ch;
+  margin: 22px 0 8px;
+  display: grid;
+  gap: 12px;
+}
+.promo-body p { font-size: 15px; line-height: 1.7; color: var(--ink-soft); margin: 0; }
+
+@media (max-width: 700px) {
+  .promo-hero { padding: 30px 20px; }
+  .promo-hero h1 { font-size: 26px; }
+}

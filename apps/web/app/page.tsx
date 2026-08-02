@@ -1,9 +1,10 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
-import { useApp } from './context/AppContext';
+import { Product, useApp } from './context/AppContext';
+import { apiFetch } from './lib/api';
 import ProductCard from './components/ProductCard';
 import Reveal from './components/Reveal';
 import Banner from './components/Banner';
@@ -12,6 +13,26 @@ const MapSimulator = dynamic(() => import('./components/MapSimulator'), { ssr: f
 
 export default function HomePage() {
   const { lang, products, productsLoading, productsError } = useApp();
+
+  // Sélection décidée au back-office ; l'API retombe d'elle-même sur un tri
+  // automatique par étiquette si aucun produit n'a été mis en avant.
+  const [featured, setFeatured] = useState<Product[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    apiFetch<Product[]>('/products/featured?limit=4')
+      .then((data) => {
+        if (!cancelled) setFeatured(Array.isArray(data) ? data : []);
+      })
+      .catch(() => {
+        if (!cancelled) setFeatured([]);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const t = {
     fr: {
@@ -52,9 +73,13 @@ export default function HomePage() {
     },
   }[lang];
 
-  const featured = products
-    .filter((p) => (p.flags || []).some((f) => ['bestseller', 'promo', 'new'].includes(f)))
-    .slice(0, 4);
+  // Repli si l'appel dédié échoue : l'accueil ne reste jamais vide.
+  const shown =
+    featured.length > 0
+      ? featured
+      : products
+          .filter((p) => (p.flags || []).some((f) => ['bestseller', 'promo', 'new'].includes(f)))
+          .slice(0, 4);
 
   return (
     <>
@@ -100,7 +125,7 @@ export default function HomePage() {
           </p>
         ) : (
           <div className="grid-products">
-            {featured.map((p, i) => (
+            {shown.map((p, i) => (
               <Reveal key={p.id} delay={i * 60}>
                 <ProductCard p={p} />
               </Reveal>

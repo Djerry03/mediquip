@@ -22,6 +22,7 @@ export type PublicUser = {
   role: UserRole;
   defaultQuartierId?: string;
   defaultPointRepere?: string;
+  newsletterOptIn: boolean;
 };
 
 @Injectable()
@@ -42,6 +43,7 @@ export class AuthService {
       role: user.role,
       defaultQuartierId: user.defaultQuartierId,
       defaultPointRepere: user.defaultPointRepere,
+      newsletterOptIn: user.newsletterOptIn ?? false,
     };
   }
 
@@ -61,6 +63,8 @@ export class AuthService {
         passwordHash: await bcrypt.hash(dto.password, BCRYPT_ROUNDS),
         fullName: dto.fullName,
         phone: dto.phone,
+        newsletterOptIn: dto.newsletterOptIn === true,
+        newsletterOptInAt: dto.newsletterOptIn === true ? new Date() : undefined,
         // Le rôle n'est jamais accepté depuis la requête : toute inscription
         // publique crée un client, jamais un administrateur.
         role: UserRole.CUSTOMER,
@@ -73,7 +77,17 @@ export class AuthService {
   async login(dto: LoginDto) {
     const user = await this.users.findOne({
       where: { email: dto.email },
-      select: ['id', 'email', 'passwordHash', 'fullName', 'phone', 'role', 'defaultQuartierId', 'defaultPointRepere'],
+      select: [
+        'id',
+        'email',
+        'passwordHash',
+        'fullName',
+        'phone',
+        'role',
+        'defaultQuartierId',
+        'defaultPointRepere',
+        'newsletterOptIn',
+      ],
     });
 
     // Message volontairement identique dans les deux cas : ne pas révéler
@@ -100,6 +114,12 @@ export class AuthService {
   async updateProfile(userId: string, dto: UpdateProfileDto): Promise<PublicUser> {
     const user = await this.users.findOne({ where: { id: userId } });
     if (!user) throw new NotFoundException('Compte introuvable.');
+
+    // La date de consentement suit le passage à vrai : elle sert de preuve
+    // en cas de contestation, et n'est pas fournie par le client.
+    if (dto.newsletterOptIn === true && !user.newsletterOptIn) {
+      user.newsletterOptInAt = new Date();
+    }
 
     Object.assign(user, dto);
     return this.toPublic(await this.users.save(user));

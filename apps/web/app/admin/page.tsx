@@ -10,6 +10,9 @@ import ProductForm from './ProductForm';
 import PromotionForm from './PromotionForm';
 import BannerForm from './BannerForm';
 import CsvPanel from './CsvPanel';
+import EmailCampaignPanel from './EmailCampaignPanel';
+import FeaturedPanel from './FeaturedPanel';
+import CampaignPagePanel from './CampaignPagePanel';
 import {
   AdminOrder,
   AdminProduct,
@@ -35,16 +38,31 @@ const NEXT_STATUSES: Record<OrderStatus, OrderStatus[]> = {
   returned: [],
 };
 
-type Tab = 'orders' | 'catalog' | 'promotions' | 'banners' | 'reviews' | 'prescriptions';
+type Tab =
+  | 'orders'
+  | 'catalog'
+  | 'featured'
+  | 'promotions'
+  | 'banners'
+  | 'pages'
+  | 'emails'
+  | 'reviews'
+  | 'prescriptions';
 
 const TAB_LABELS: Record<Tab, { fr: string; en: string }> = {
   orders: { fr: 'Commandes', en: 'Orders' },
   catalog: { fr: 'Catalogue', en: 'Catalog' },
+  featured: { fr: 'Vedettes', en: 'Featured' },
   promotions: { fr: 'Codes promo', en: 'Promo codes' },
   banners: { fr: 'Bannières', en: 'Banners' },
+  pages: { fr: 'Pages promo', en: 'Promo pages' },
+  emails: { fr: 'Campagnes e-mail', en: 'Email campaigns' },
   reviews: { fr: 'Avis', en: 'Reviews' },
   prescriptions: { fr: 'Ordonnances', en: 'Prescriptions' },
 };
+
+/** Onglets qui gèrent leur propre chargement de données. */
+const SELF_LOADING_TABS: Tab[] = ['featured', 'pages', 'emails'];
 
 export default function AdminPage() {
   const { lang, showToast } = useApp();
@@ -75,7 +93,7 @@ export default function AdminPage() {
   const [editingBanner, setEditingBanner] = useState<Banner | null | undefined>(undefined);
 
   const load = useCallback(async () => {
-    if (!isAdmin) return;
+    if (!isAdmin || SELF_LOADING_TABS.includes(tab)) return;
     setLoading(true);
     setError(null);
     try {
@@ -669,6 +687,15 @@ export default function AdminPage() {
           )}
         </>
       )}
+
+      {/* -------------------------------------------------------- Vedettes */}
+      {tab === 'featured' && <FeaturedPanel notify={showToast} />}
+
+      {/* ------------------------------------------------------ Pages promo */}
+      {tab === 'pages' && <CampaignPagePanel notify={showToast} />}
+
+      {/* ------------------------------------------------ Campagnes e-mail */}
+      {tab === 'emails' && <EmailCampaignPanel notify={showToast} />}
 
       {/* ------------------------------------------------------------ Avis */}
       {tab === 'reviews' && !loading && (

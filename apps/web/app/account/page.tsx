@@ -23,7 +23,13 @@ export default function AccountPage() {
   const { user, loading, login, register, logout, updateProfile } = useAuth();
 
   const [mode, setMode] = useState<'login' | 'register'>('login');
-  const [form, setForm] = useState({ email: '', password: '', fullName: '', phone: '' });
+  const [form, setForm] = useState({
+    email: '',
+    password: '',
+    fullName: '',
+    phone: '',
+    newsletterOptIn: false,
+  });
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -56,6 +62,9 @@ export default function AccountPage() {
       pickupCode: 'Code de retrait',
       backoffice: 'Accéder au back-office',
       loading: 'Chargement…',
+      newsletter: 'Recevoir nos offres et nouveautés par e-mail',
+      newsletterHint:
+        'Quelques messages par mois, jamais de revente de vos données. Désinscription en un clic depuis chaque e-mail. Les messages liés à vos commandes vous parviennent dans tous les cas.',
     },
     en: {
       titleAuth: 'My account',
@@ -82,6 +91,9 @@ export default function AccountPage() {
       pickupCode: 'Pickup code',
       backoffice: 'Open back office',
       loading: 'Loading…',
+      newsletter: 'Receive our offers and news by email',
+      newsletterHint:
+        'A few messages per month, your data is never resold. One-click unsubscribe from every email. Order-related messages reach you regardless.',
     },
   }[lang];
 
@@ -113,6 +125,7 @@ export default function AccountPage() {
           password: form.password,
           fullName: form.fullName,
           phone: form.phone || undefined,
+          newsletterOptIn: form.newsletterOptIn,
         });
       }
     } catch (err) {
@@ -129,6 +142,7 @@ export default function AccountPage() {
       await updateProfile({
         fullName: String(data.get('fullName') || ''),
         phone: String(data.get('phone') || '') || undefined,
+        newsletterOptIn: data.get('newsletterOptIn') === 'on',
       });
       showToast(t.saved);
     } catch (err) {
@@ -198,6 +212,20 @@ export default function AccountPage() {
                 onChange={(e) => setForm({ ...form, phone: e.target.value })}
                 autoComplete="tel"
               />
+            </label>
+          )}
+
+          {mode === 'register' && (
+            <label className="switch-row">
+              <input
+                type="checkbox"
+                checked={form.newsletterOptIn}
+                onChange={(e) => setForm({ ...form, newsletterOptIn: e.target.checked })}
+              />
+              <span>
+                <strong>{t.newsletter}</strong>
+                <small>{t.newsletterHint}</small>
+              </span>
             </label>
           )}
 
@@ -301,6 +329,17 @@ export default function AccountPage() {
           <label>
             {t.email}
             <input value={user.email} disabled />
+          </label>
+          <label className="switch-row">
+            <input
+              type="checkbox"
+              name="newsletterOptIn"
+              defaultChecked={user.newsletterOptIn}
+            />
+            <span>
+              <strong>{t.newsletter}</strong>
+              <small>{t.newsletterHint}</small>
+            </span>
           </label>
           <button className="btn btn-outline" style={{ width: 'fit-content' }}>
             {t.save}
