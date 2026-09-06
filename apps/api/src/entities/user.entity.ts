@@ -37,6 +37,13 @@ export class UserEntity {
   @Column({ type: 'varchar', default: UserRole.CUSTOMER })
   role: UserRole;
 
+  /**
+   * Incrémenté lors d'un changement de mot de passe ou d'une déconnexion.
+   * Les JWT portant une ancienne version sont alors immédiatement refusés.
+   */
+  @Column({ type: 'int', default: 0 })
+  sessionVersion: number;
+
   @Column({ type: 'boolean', default: false })
   emailVerified: boolean;
 

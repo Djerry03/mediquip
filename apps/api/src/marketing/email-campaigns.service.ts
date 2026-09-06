@@ -1,8 +1,18 @@
-import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  NotFoundException,
+  OnModuleInit,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { DataSource, In, Repository } from 'typeorm';
 import { randomBytes } from 'crypto';
+import {
+  EmailCampaignDeliveryEntity,
+  EmailCampaignDeliveryStatus,
+} from '../entities/email-campaign-delivery.entity';
 import {
   CampaignAudience,
   CampaignStatus,
@@ -23,17 +33,51 @@ const BATCH_SIZE = 25;
 const BATCH_PAUSE_MS = 1_000;
 
 @Injectable()
-export class EmailCampaignsService {
+export class EmailCampaignsService implements OnModuleInit {
   private readonly logger = new Logger(EmailCampaignsService.name);
+  private readonly runningCampaigns = new Set<string>();
 
   constructor(
     @InjectRepository(EmailCampaignEntity)
     private readonly campaigns: Repository<EmailCampaignEntity>,
     @InjectRepository(UserEntity)
     private readonly users: Repository<UserEntity>,
+    @InjectRepository(EmailCampaignDeliveryEntity)
+    private readonly deliveries: Repository<EmailCampaignDeliveryEntity>,
+    private readonly dataSource: DataSource,
     private readonly notifications: NotificationsService,
     private readonly config: ConfigService,
   ) {}
+
+  /**
+   * Les envois n'ont pas besoin d'un processus séparé pour reprendre après
+   * une relance : les destinataires et leur état sont dans PostgreSQL. Les
+   * messages déjà confirmés restent `sent`; seules les lignes interrompues
+   * sont remises dans la file.
+   */
+  async onModuleInit() {
+    try {
+      const interrupted = await this.campaigns.find({
+        where: { status: CampaignStatus.SENDING },
+      });
+
+      for (const campaign of interrupted) {
+        await this.deliveries.update(
+          { campaignId: campaign.id, status: EmailCampaignDeliveryStatus.SENDING },
+          { status: EmailCampaignDeliveryStatus.PENDING },
+        );
+        void this.deliver(campaign.id);
+      }
+
+      if (interrupted.length > 0) {
+        this.logger.warn(`${interrupted.length} campagne(s) e-mail reprise(s) après redémarrage.`);
+      }
+    } catch (error) {
+      // La disponibilité du catalogue ne doit pas dépendre d'une reprise
+      // d'e-mails. L'alerte permet toutefois d'intervenir sans perdre la file.
+      this.logger.error(`Reprise des campagnes impossible : ${(error as Error).message}`);
+    }
+  }
 
   // ------------------------------------------------------------- Audience
 
@@ -157,21 +201,21 @@ export class EmailCampaignsService {
   async sendTest(id: string, dto: TestSendDto) {
     const campaign = await this.findOne(id);
 
-    await this.notifications.send({
+    const sent = await this.notifications.send({
       to: dto.email,
       subject: `[TEST] ${campaign.subject}`,
       text: this.renderBody(campaign, 'https://exemple/desinscription?token=apercu'),
     });
 
-    return { sent: true, to: dto.email };
+    return { sent, to: dto.email };
   }
 
   /**
    * Envoie la campagne à toute son audience.
    *
-   * Le traitement se fait par lots, en arrière-plan : l'administrateur n'a
-   * pas à garder son onglet ouvert, et un millier de destinataires ne bloque
-   * pas la requête HTTP.
+   * Les destinataires sont d'abord persistés, puis traités par lots en
+   * arrière-plan : un redémarrage n'abandonne donc ni ne renvoie les e-mails
+   * dont l'expédition a déjà été confirmée.
    */
   async send(id: string, admin: AuthenticatedUser): Promise<EmailCampaignEntity> {
     const campaign = await this.findOne(id);
@@ -187,70 +231,151 @@ export class EmailCampaignsService {
       );
     }
 
-    campaign.status = CampaignStatus.SENDING;
-    campaign.recipientCount = recipients.length;
-    campaign.sentCount = 0;
-    campaign.failedCount = 0;
-    campaign.sentByEmail = admin.email;
-    await this.campaigns.save(campaign);
+    await this.dataSource.transaction(async (manager) => {
+      campaign.status = CampaignStatus.SENDING;
+      campaign.recipientCount = recipients.length;
+      campaign.sentCount = 0;
+      campaign.failedCount = 0;
+      campaign.sentByEmail = admin.email;
+      campaign.lastError = undefined;
+      await manager.save(campaign);
+
+      await manager
+        .createQueryBuilder()
+        .insert()
+        .into(EmailCampaignDeliveryEntity)
+        .values(
+          recipients.map((user) => ({
+            campaignId: campaign.id,
+            userId: user.id,
+            status: EmailCampaignDeliveryStatus.PENDING,
+            attempts: 0,
+          })),
+        )
+        // L'index unique garantit qu'un éventuel rejeu de la requête admin
+        // ne crée jamais deux lignes pour le même destinataire.
+        .orIgnore()
+        .execute();
+    });
 
     // Volontairement non attendu : la réponse HTTP part immédiatement.
-    void this.deliver(campaign, recipients);
+    void this.deliver(campaign.id);
 
     return campaign;
   }
 
-  private async deliver(campaign: EmailCampaignEntity, recipients: UserEntity[]) {
-    let sent = 0;
-    let failed = 0;
+  private async deliver(campaignId: string) {
+    if (this.runningCampaigns.has(campaignId)) return;
+    this.runningCampaigns.add(campaignId);
 
     try {
-      for (let i = 0; i < recipients.length; i += BATCH_SIZE) {
-        const batch = recipients.slice(i, i + BATCH_SIZE);
+      const campaign = await this.findOne(campaignId);
+      let processed = 0;
 
-        await Promise.all(
-          batch.map(async (user) => {
-            try {
-              const token = await this.ensureUnsubscribeToken(user);
-              await this.notifications.send({
-                to: user.email,
-                subject: campaign.subject,
-                text: this.renderBody(campaign, this.unsubscribeUrl(token), user.fullName),
-              });
-              sent++;
-            } catch (err) {
-              failed++;
-              this.logger.warn(
-                `Campagne ${campaign.id} : échec pour ${user.email} — ${(err as Error).message}`,
-              );
-            }
-          }),
-        );
+      for (;;) {
+        const delivery = await this.claimNextDelivery(campaignId);
+        if (!delivery) break;
 
-        await this.campaigns.update(campaign.id, { sentCount: sent, failedCount: failed });
+        await this.deliverRecipient(campaign, delivery);
+        processed++;
 
-        if (i + BATCH_SIZE < recipients.length) {
+        if (processed % BATCH_SIZE === 0) {
+          await this.refreshCounters(campaignId);
           await new Promise((resolve) => setTimeout(resolve, BATCH_PAUSE_MS));
         }
       }
 
-      await this.campaigns.update(campaign.id, {
-        status: CampaignStatus.SENT,
-        sentCount: sent,
-        failedCount: failed,
-        sentAt: new Date(),
+      const counters = await this.refreshCounters(campaignId, true);
+      this.logger.log(
+        `Campagne « ${campaign.name} » : ${counters.sent} envoyé(s), ${counters.failed} échec(s).`,
+      );
+    } catch (error) {
+      await this.campaigns.update(campaignId, {
+        status: CampaignStatus.FAILED,
+        lastError: (error as Error).message,
+      });
+      this.logger.error(`Campagne ${campaignId} interrompue : ${(error as Error).message}`);
+    } finally {
+      this.runningCampaigns.delete(campaignId);
+    }
+  }
+
+  /** Réserve une ligne à traiter, de façon exclusive même avec plusieurs processus API. */
+  private async claimNextDelivery(campaignId: string): Promise<EmailCampaignDeliveryEntity | null> {
+    return this.dataSource.transaction(async (manager) => {
+      const delivery = await manager
+        .createQueryBuilder(EmailCampaignDeliveryEntity, 'delivery')
+        .setLock('pessimistic_write')
+        .setOnLocked('skip_locked')
+        .where('delivery."campaignId" = :campaignId', { campaignId })
+        .andWhere('delivery.status = :status', { status: EmailCampaignDeliveryStatus.PENDING })
+        .orderBy('delivery."createdAt"', 'ASC')
+        .getOne();
+
+      if (!delivery) return null;
+
+      delivery.status = EmailCampaignDeliveryStatus.SENDING;
+      delivery.attempts += 1;
+      return manager.save(delivery);
+    });
+  }
+
+  private async deliverRecipient(
+    campaign: EmailCampaignEntity,
+    delivery: EmailCampaignDeliveryEntity,
+  ) {
+    const user = await this.users.findOne({ where: { id: delivery.userId } });
+
+    // Une désinscription intervenue après la constitution de l'audience doit
+    // être respectée jusqu'à la dernière seconde avant l'envoi.
+    if (!user?.email || !user.newsletterOptIn) {
+      await this.deliveries.update(delivery.id, { status: EmailCampaignDeliveryStatus.SKIPPED });
+      return;
+    }
+
+    try {
+      const token = await this.ensureUnsubscribeToken(user);
+      const sent = await this.notifications.send({
+        to: user.email,
+        subject: campaign.subject,
+        text: this.renderBody(campaign, this.unsubscribeUrl(token), user.fullName),
       });
 
-      this.logger.log(`Campagne « ${campaign.name} » : ${sent} envoyé(s), ${failed} échec(s).`);
-    } catch (err) {
-      await this.campaigns.update(campaign.id, {
-        status: CampaignStatus.FAILED,
-        sentCount: sent,
-        failedCount: failed,
-        lastError: (err as Error).message,
+      if (sent) {
+        await this.deliveries.update(delivery.id, {
+          status: EmailCampaignDeliveryStatus.SENT,
+          sentAt: new Date(),
+        });
+      } else {
+        await this.deliveries.update(delivery.id, {
+          status: EmailCampaignDeliveryStatus.FAILED,
+          lastError: 'Le transport e-mail a rejeté le message.',
+        });
+      }
+    } catch (error) {
+      await this.deliveries.update(delivery.id, {
+        status: EmailCampaignDeliveryStatus.FAILED,
+        lastError: (error as Error).message,
       });
-      this.logger.error(`Campagne ${campaign.id} interrompue : ${(err as Error).message}`);
+      this.logger.warn(
+        `Campagne ${campaign.id} : échec pour ${user.email} — ${(error as Error).message}`,
+      );
     }
+  }
+
+  private async refreshCounters(campaignId: string, completed = false) {
+    const [sent, failed] = await Promise.all([
+      this.deliveries.count({ where: { campaignId, status: EmailCampaignDeliveryStatus.SENT } }),
+      this.deliveries.count({ where: { campaignId, status: EmailCampaignDeliveryStatus.FAILED } }),
+    ]);
+
+    await this.campaigns.update(campaignId, {
+      sentCount: sent,
+      failedCount: failed,
+      ...(completed ? { status: CampaignStatus.SENT, sentAt: new Date() } : {}),
+    });
+
+    return { sent, failed };
   }
 
   /**

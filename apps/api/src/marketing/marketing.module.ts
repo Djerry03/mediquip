@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { BannerEntity } from '../entities/banner.entity';
 import { CampaignPageEntity } from '../entities/campaign-page.entity';
+import { EmailCampaignDeliveryEntity } from '../entities/email-campaign-delivery.entity';
 import { EmailCampaignEntity } from '../entities/email-campaign.entity';
 import { ProductEntity } from '../entities/product.entity';
 import { UserEntity } from '../entities/user.entity';
@@ -17,6 +18,7 @@ import { EmailCampaignsService } from './email-campaigns.service';
     TypeOrmModule.forFeature([
       BannerEntity,
       CampaignPageEntity,
+      EmailCampaignDeliveryEntity,
       EmailCampaignEntity,
       ProductEntity,
       UserEntity,

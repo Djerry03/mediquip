@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { apiFetch, ApiError, getToken, setToken } from '../lib/api';
+import { apiFetch } from '../lib/api';
 
 export type User = {
   id: string;
@@ -27,7 +27,7 @@ type AuthContextType = {
     phone?: string;
     newsletterOptIn?: boolean;
   }) => Promise<User>;
-  logout: () => void;
+  logout: () => Promise<void>;
   updateProfile: (patch: Partial<User>) => Promise<User>;
   refresh: () => Promise<void>;
 };
@@ -38,23 +38,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  /**
-   * La session est validée côté serveur au chargement : un jeton présent
-   * dans le navigateur ne prouve rien tant que l'API ne l'a pas accepté.
-   */
+  /** La session HttpOnly est validée côté serveur au chargement. */
   const refresh = useCallback(async () => {
-    if (!getToken()) {
-      setUser(null);
-      setLoading(false);
-      return;
-    }
-
     try {
       setUser(await apiFetch<User>('/auth/me', { auth: true }));
-    } catch (err) {
-      // Jeton expiré ou révoqué : on nettoie plutôt que de laisser une
-      // session fantôme afficher une interface à laquelle l'API répondra 401.
-      if (err instanceof ApiError && err.status === 401) setToken(null);
+    } catch {
       setUser(null);
     } finally {
       setLoading(false);
@@ -66,11 +54,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [refresh]);
 
   const login = useCallback(async (email: string, password: string) => {
-    const res = await apiFetch<{ token: string; user: User }>('/auth/login', {
+    const res = await apiFetch<{ user: User }>('/auth/login', {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     });
-    setToken(res.token);
     setUser(res.user);
     return res.user;
   }, []);
@@ -83,19 +70,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       phone?: string;
       newsletterOptIn?: boolean;
     }) => {
-      const res = await apiFetch<{ token: string; user: User }>('/auth/register', {
+      const res = await apiFetch<{ user: User }>('/auth/register', {
         method: 'POST',
         body: JSON.stringify(input),
       });
-      setToken(res.token);
       setUser(res.user);
       return res.user;
     },
     [],
   );
 
-  const logout = useCallback(() => {
-    setToken(null);
+  const logout = useCallback(async () => {
+    try {
+      await apiFetch('/auth/logout', { method: 'POST', auth: true });
+    } catch {
+      // Même si l'API est hors ligne, on ferme l'interface locale. Le cookie
+      // HttpOnly expirera à la fermeture du navigateur.
+    }
     setUser(null);
   }, []);
 

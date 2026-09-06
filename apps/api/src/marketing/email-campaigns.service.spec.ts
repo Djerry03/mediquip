@@ -2,11 +2,13 @@ import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Test } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
+import { DataSource } from 'typeorm';
 import {
   CampaignAudience,
   CampaignStatus,
   EmailCampaignEntity,
 } from '../entities/email-campaign.entity';
+import { EmailCampaignDeliveryEntity } from '../entities/email-campaign-delivery.entity';
 import { UserEntity } from '../entities/user.entity';
 import { NotificationsService } from '../notifications/notifications.service';
 import { EmailCampaignsService } from './email-campaigns.service';
@@ -29,6 +31,8 @@ describe('EmailCampaignsService', () => {
   let service: EmailCampaignsService;
   let campaigns: Record<string, jest.Mock>;
   let users: Record<string, jest.Mock>;
+  let deliveries: Record<string, jest.Mock>;
+  let dataSource: Record<string, jest.Mock>;
   let notifications: { send: jest.Mock };
   let queryBuilder: Record<string, jest.Mock>;
 
@@ -55,13 +59,24 @@ describe('EmailCampaignsService', () => {
       update: jest.fn().mockResolvedValue({}),
     };
 
-    notifications = { send: jest.fn().mockResolvedValue(undefined) };
+    deliveries = {
+      update: jest.fn().mockResolvedValue({}),
+      count: jest.fn().mockResolvedValue(0),
+    };
+
+    dataSource = {
+      transaction: jest.fn(),
+    };
+
+    notifications = { send: jest.fn().mockResolvedValue(true) };
 
     const module = await Test.createTestingModule({
       providers: [
         EmailCampaignsService,
         { provide: getRepositoryToken(EmailCampaignEntity), useValue: campaigns },
         { provide: getRepositoryToken(UserEntity), useValue: users },
+        { provide: getRepositoryToken(EmailCampaignDeliveryEntity), useValue: deliveries },
+        { provide: DataSource, useValue: dataSource },
         { provide: NotificationsService, useValue: notifications },
         { provide: ConfigService, useValue: { get: () => 'https://mediquipe.cm' } },
       ],
@@ -146,6 +161,42 @@ describe('EmailCampaignsService', () => {
       campaigns.findOne.mockResolvedValue(campaign({ status: CampaignStatus.SENDING }));
 
       await expect(service.remove('c1')).rejects.toThrow(BadRequestException);
+    });
+
+    it('enregistre tous les destinataires avant de lancer le traitement asynchrone', async () => {
+      const recipient = {
+        id: '0d0960ee-5bc4-4e17-bd94-101c29d78355',
+        email: 'client@x.cm',
+        fullName: 'Client Test',
+      };
+      const insert = {
+        insert: jest.fn().mockReturnThis(),
+        into: jest.fn().mockReturnThis(),
+        values: jest.fn().mockReturnThis(),
+        orIgnore: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockResolvedValue({}),
+      };
+      const manager = {
+        save: jest.fn().mockResolvedValue({}),
+        createQueryBuilder: jest.fn(() => insert),
+      };
+
+      campaigns.findOne.mockResolvedValue(campaign());
+      queryBuilder.getMany.mockResolvedValue([recipient]);
+      dataSource.transaction.mockImplementation(async (work) => work(manager));
+      const deliver = jest.spyOn(service as any, 'deliver').mockResolvedValue(undefined);
+
+      await service.send('c1', {
+        id: 'admin',
+        email: 'admin@x.cm',
+        role: 'admin' as any,
+        fullName: 'Admin',
+      });
+
+      expect(insert.values).toHaveBeenCalledWith([
+        expect.objectContaining({ campaignId: 'c1', userId: recipient.id, status: 'pending' }),
+      ]);
+      expect(deliver).toHaveBeenCalledWith('c1');
     });
   });
 

@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { formatFcfa, useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
-import { apiFetch, ApiError, API_URL, getToken } from '../lib/api';
+import { apiFetch, ApiError, API_URL, mediaUrl } from '../lib/api';
 import { ORDER_STATUS_LABELS, OrderStatus, PAYMENT_STATUS_LABELS } from '../lib/order-status';
 import ProductForm from './ProductForm';
 import PromotionForm from './PromotionForm';
@@ -152,13 +152,13 @@ export default function AdminPage() {
   };
 
   /**
-   * Le document d'ordonnance est protégé par le jeton : un `<a href>` simple
-   * n'enverrait pas l'en-tête Authorization.
+   * Le document d'ordonnance est protégé par la session HttpOnly. Un `<a>`
+   * simple ne permettrait pas d'ouvrir proprement l'URL blob obtenue.
    */
   const openPrescriptionFile = async (id: string) => {
     try {
       const res = await fetch(`${API_URL}/prescriptions/${id}/file`, {
-        headers: { Authorization: `Bearer ${getToken()}` },
+        credentials: 'include',
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
@@ -394,7 +394,7 @@ export default function AdminPage() {
                       <div className="thumb">
                         {p.images?.[0] ? (
                           // eslint-disable-next-line @next/next/no-img-element
-                          <img src={`${API_URL.replace(/\/api$/, '')}${p.images[0]}`} alt="" />
+                          <img src={mediaUrl(p.images[0])} alt="" />
                         ) : (
                           <span>✚</span>
                         )}

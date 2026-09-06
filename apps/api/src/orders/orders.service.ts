@@ -59,20 +59,11 @@ export class OrdersService {
   // ------------------------------------------------------------- Création
 
   async create(dto: CreateOrderDto, user?: AuthenticatedUser): Promise<CreatedOrder> {
-    // La clé d'idempotence est portée par le client. À défaut, on en dérive
-    // une du contenu : un double-clic ne crée pas deux commandes.
-    const idempotenceKey =
-      dto.idempotenceKey?.trim() ||
-      [
-        user?.id ?? 'guest',
-        dto.phone,
-        dto.mode_reception,
-        dto.quartier_id ?? dto.boutique_id ?? '',
-        dto.items
-          .map((i) => `${i.productId}:${i.qty}:${i.color ?? ''}:${i.size ?? ''}`)
-          .sort()
-          .join('|'),
-      ].join('#');
+    // La clé est créée par le navigateur au début d'une tentative de
+    // commande. Elle survit à un rejeu après une coupure réseau, mais ne
+    // dépend jamais du panier ou du téléphone : un client peut donc commander
+    // deux fois le même panier à des moments différents.
+    const idempotenceKey = dto.idempotenceKey;
 
     const existing = await this.orders.findOne({ where: { idempotenceKey } });
     if (existing) return existing;
@@ -192,53 +183,65 @@ export class OrdersService {
 
     // 4. Écriture atomique : numéro, stock, promo et commande dans une seule
     //    transaction. Un stock insuffisant annule tout — rien n'est écrit.
-    const order = await this.dataSource.transaction(async (manager) => {
-      const id = await this.nextOrderId(manager);
+    let order: OrderEntity;
+    try {
+      order = await this.dataSource.transaction(async (manager) => {
+        const id = await this.nextOrderId(manager);
 
-      await this.stock.reserve(
-        manager,
-        boutiqueId!,
-        dto.items.map((i) => ({ produit_id: i.productId, quantite: i.qty })),
-        id,
-        new Map(products.map((p) => [p.id, p.name.fr])),
-      );
-
-      if (promotionCode) await this.promotions.consume(promotionCode, manager);
-
-      return manager.save(
-        manager.create(OrderEntity, {
+        await this.stock.reserve(
+          manager,
+          boutiqueId!,
+          dto.items.map((i) => ({ produit_id: i.productId, quantite: i.qty })),
           id,
-          trackingToken: randomBytes(16).toString('hex'),
-          userId: user?.id,
-          client: dto.clientName,
-          phone: dto.phone,
-          email: dto.email,
-          address,
-          items: lines,
-          itemsTotal,
-          shippingFee,
-          discount,
-          total,
-          promotionCode,
-          status: OrderStatus.PENDING,
-          statusHistory: [{ status: OrderStatus.PENDING, at: new Date().toISOString() }],
-          paymentMethod,
-          paymentStatus: PaymentStatus.PENDING,
-          mode_reception: dto.mode_reception,
-          boutique_id: boutiqueId,
-          quartier_id: dto.quartier_id,
-          zone_code_snapshot: zoneCodeSnapshot,
-          frais_livraison_snapshot: shippingFee,
-          point_repere_client: dto.point_repere_client,
-          telephone_contact: dto.telephone_contact || dto.phone,
-          code_retrait: codeRetrait,
-          note: dto.note,
-          requiresPrescription,
-          prescriptionVerified: false,
-          idempotenceKey,
-        }),
-      );
-    });
+          new Map(products.map((p) => [p.id, p.name.fr])),
+        );
+
+        if (promotionCode) await this.promotions.consume(promotionCode, manager);
+
+        return manager.save(
+          manager.create(OrderEntity, {
+            id,
+            trackingToken: randomBytes(16).toString('hex'),
+            userId: user?.id,
+            client: dto.clientName,
+            phone: dto.phone,
+            email: dto.email,
+            address,
+            items: lines,
+            itemsTotal,
+            shippingFee,
+            discount,
+            total,
+            promotionCode,
+            status: OrderStatus.PENDING,
+            statusHistory: [{ status: OrderStatus.PENDING, at: new Date().toISOString() }],
+            paymentMethod,
+            paymentStatus: PaymentStatus.PENDING,
+            mode_reception: dto.mode_reception,
+            boutique_id: boutiqueId,
+            quartier_id: dto.quartier_id,
+            zone_code_snapshot: zoneCodeSnapshot,
+            frais_livraison_snapshot: shippingFee,
+            point_repere_client: dto.point_repere_client,
+            telephone_contact: dto.telephone_contact || dto.phone,
+            code_retrait: codeRetrait,
+            note: dto.note,
+            requiresPrescription,
+            prescriptionVerified: false,
+            idempotenceKey,
+          }),
+        );
+      });
+    } catch (error) {
+      // Deux requêtes identiques peuvent passer le premier contrôle au même
+      // instant. L'index unique arbitre alors la course ; on renvoie le
+      // résultat déjà créé au lieu d'exposer une erreur 500 au client.
+      if (!this.isUniqueViolation(error)) throw error;
+
+      const concurrentOrder = await this.orders.findOne({ where: { idempotenceKey } });
+      if (!concurrentOrder) throw error;
+      return concurrentOrder;
+    }
 
     // 5. Effets de bord post-transaction. Ils ne doivent jamais faire échouer
     //    une commande déjà enregistrée, donc chacun est isolé.
@@ -493,5 +496,15 @@ export class OrdersService {
     let diff = 0;
     for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
     return diff === 0;
+  }
+
+  /** Code PostgreSQL d'une violation de contrainte unique. */
+  private isUniqueViolation(error: unknown): boolean {
+    return (
+      typeof error === 'object' &&
+      error !== null &&
+      'code' in error &&
+      (error as { code?: unknown }).code === '23505'
+    );
   }
 }

@@ -8,6 +8,15 @@ const PLACEHOLDERS = [
   'change-me-webhook-secret',
 ];
 
+function isPublicHttpsUrl(value: unknown): boolean {
+  try {
+    const url = new URL(String(value));
+    return url.protocol === 'https:' && url.hostname !== 'localhost';
+  } catch {
+    return false;
+  }
+}
+
 /**
  * Vérifie la configuration au démarrage. Un secret manquant ou laissé à sa
  * valeur d'exemple fait échouer le démarrage en production : mieux vaut ne
@@ -37,6 +46,9 @@ export function validateEnv(config: Record<string, unknown>) {
     if (String(config.POSTGRES_PASSWORD || '') === 'postgres') {
       errors.push('POSTGRES_PASSWORD ne peut pas rester « postgres » en production.');
     }
+    if (!isPublicHttpsUrl(config.NEXT_PUBLIC_SITE_URL)) {
+      errors.push('NEXT_PUBLIC_SITE_URL doit être une URL HTTPS publique en production.');
+    }
   }
 
   const provider = String(config.PAYMENT_PROVIDER || 'manual');
@@ -55,6 +67,14 @@ export function validateEnv(config: Record<string, unknown>) {
   }
   if (transport === 'smtp' && !config.SMTP_HOST) {
     errors.push('SMTP_HOST est obligatoire quand NOTIFICATION_TRANSPORT=smtp.');
+  }
+  if (isProduction && transport !== 'smtp') {
+    errors.push('NOTIFICATION_TRANSPORT doit être « smtp » en production.');
+  }
+  if (isProduction && transport === 'smtp') {
+    for (const key of ['SMTP_FROM', 'OPS_NOTIFICATION_EMAIL']) {
+      if (!config[key]) errors.push(`${key} est obligatoire avec SMTP en production.`);
+    }
   }
 
   warnings.forEach((w) => logger.warn(w));

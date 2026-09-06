@@ -4,7 +4,7 @@ import React, { useRef, useState } from 'react';
 import Link from 'next/link';
 import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
-import { API_URL, ApiError, getToken } from '../lib/api';
+import { API_URL, ApiError } from '../lib/api';
 
 const ACCEPTED = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'application/pdf'];
 const MAX_SIZE = 8 * 1024 * 1024;
@@ -103,10 +103,9 @@ export default function UploadListPage() {
 
     try {
       // FormData impose son propre Content-Type (avec boundary) : on ne le fixe pas.
-      const token = getToken();
       const res = await fetch(`${API_URL}/prescriptions`, {
         method: 'POST',
-        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        credentials: 'include',
         body,
       });
 

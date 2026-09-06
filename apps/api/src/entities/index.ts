@@ -1,6 +1,7 @@
 import { BannerEntity } from './banner.entity';
 import { BoutiqueEntity } from './boutique.entity';
 import { CampaignPageEntity } from './campaign-page.entity';
+import { EmailCampaignDeliveryEntity } from './email-campaign-delivery.entity';
 import { EmailCampaignEntity } from './email-campaign.entity';
 import { OrderEntity } from './order.entity';
 import { PaymentEntity } from './payment.entity';
@@ -21,6 +22,7 @@ export const ENTITIES = [
   BannerEntity,
   BoutiqueEntity,
   CampaignPageEntity,
+  EmailCampaignDeliveryEntity,
   EmailCampaignEntity,
   OrderEntity,
   PaymentEntity,
@@ -41,6 +43,7 @@ export {
   BannerEntity,
   BoutiqueEntity,
   CampaignPageEntity,
+  EmailCampaignDeliveryEntity,
   EmailCampaignEntity,
   OrderEntity,
   PaymentEntity,

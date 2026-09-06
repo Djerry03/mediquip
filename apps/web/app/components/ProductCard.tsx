@@ -3,6 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { Product, formatFcfa, useApp } from '../context/AppContext';
+import { mediaUrl } from '../lib/api';
 
 const FLAG_LABELS: Record<string, { fr: string; en: string }> = {
   bestseller: { fr: 'Best-seller', en: 'Bestseller' },
@@ -28,17 +29,18 @@ export function ProductMedia({
   product: Product;
   className?: string;
 }) {
-  const image = product.images?.[0];
+  const image = mediaUrl(product.images?.[0]);
   if (!image) {
     return <span className="ph">✚</span>;
   }
   return (
-    // Les visuels sont des SVG servis depuis /public : `next/image` n'apporte
-    // rien ici et impose une configuration de domaines inutile.
+    // Les visuels viennent de deux origines (Next pour ceux livrés avec le
+    // site, l'API pour ceux téléversés) : `next/image` imposerait de déclarer
+    // chaque domaine sans rien apporter à des vignettes de cette taille.
     // eslint-disable-next-line @next/next/no-img-element
     <img
       src={image}
-      alt=""
+      alt={product.name?.fr ?? ''}
       loading="lazy"
       style={{ width: '100%', height: '100%', objectFit: 'cover' }}
     />

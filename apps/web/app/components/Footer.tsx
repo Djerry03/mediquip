@@ -28,7 +28,7 @@ export default function Footer() {
       socialTitle: "Suivez-nous",
       socialHandle: "@Mediquipe_Cameroun (Facebook, Instagram, TikTok)",
       partnersTitle: "Nos partenaires",
-      rights: "© 2026 MEDIQUEPE — Tous droits réservés",
+      rights: "© 2026 MEDIQUIPE — Tous droits réservés",
       privacy: "Politique de confidentialité",
     },
     en: {
@@ -51,7 +51,7 @@ export default function Footer() {
       socialTitle: "Follow us",
       socialHandle: "@Mediquipe_Cameroun (Facebook, Instagram, TikTok)",
       partnersTitle: "Our partners",
-      rights: "© 2026 MEDIQUEPE — All rights reserved",
+      rights: "© 2026 MEDIQUIPE — All rights reserved",
       privacy: "Privacy policy",
     },
   }[lang];
@@ -61,7 +61,7 @@ export default function Footer() {
       <div className="footer-inner" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))' }}>
         <div>
           <div className="logo" style={{ color: '#fff', marginBottom: 10 }}>
-            <span className="cross"></span> MEDIQUEPE
+            <span className="cross"></span> MEDIQUIPE
           </div>
           <p>{t.about}</p>
           <div style={{ marginTop: 14 }}>

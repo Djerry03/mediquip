@@ -85,6 +85,10 @@ export default function CheckoutPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirmed, setConfirmed] = useState<CreatedOrder | null>(null);
+  // Créée une fois pour cette tentative : un rejeu réseau reçoit le même
+  // résultat, tandis qu'un nouveau passage par le checkout crée une commande
+  // distincte, même avec le même panier.
+  const idempotenceKeyRef = useRef<string | null>(null);
 
   const t = {
     fr: {
@@ -315,6 +319,7 @@ export default function CheckoutPage() {
 
     setSubmitting(true);
     try {
+      idempotenceKeyRef.current ??= crypto.randomUUID();
       const order = await apiFetch<CreatedOrder>('/orders', {
         method: 'POST',
         auth: true,
@@ -337,6 +342,7 @@ export default function CheckoutPage() {
           promotionCode: discount?.code,
           express: mode === 'livraison' ? express : undefined,
           note: form.note || undefined,
+          idempotenceKey: idempotenceKeyRef.current,
         }),
       });
 

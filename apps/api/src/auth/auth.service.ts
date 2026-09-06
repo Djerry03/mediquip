@@ -47,8 +47,8 @@ export class AuthService {
     };
   }
 
-  private sign(user: UserEntity) {
-    return this.jwt.sign({ sub: user.id, email: user.email, role: user.role });
+  private sign(user: Pick<UserEntity, 'id' | 'sessionVersion'>) {
+    return this.jwt.sign({ sub: user.id, sv: user.sessionVersion });
   }
 
   async register(dto: RegisterDto) {
@@ -68,6 +68,7 @@ export class AuthService {
         // Le rôle n'est jamais accepté depuis la requête : toute inscription
         // publique crée un client, jamais un administrateur.
         role: UserRole.CUSTOMER,
+        sessionVersion: 0,
       }),
     );
 
@@ -87,6 +88,7 @@ export class AuthService {
         'defaultQuartierId',
         'defaultPointRepere',
         'newsletterOptIn',
+        'sessionVersion',
       ],
     });
 
@@ -128,7 +130,7 @@ export class AuthService {
   async changePassword(userId: string, dto: ChangePasswordDto) {
     const user = await this.users.findOne({
       where: { id: userId },
-      select: ['id', 'passwordHash'],
+      select: ['id', 'passwordHash', 'sessionVersion'],
     });
     if (!user) throw new NotFoundException('Compte introuvable.');
 
@@ -136,10 +138,18 @@ export class AuthService {
       throw new UnauthorizedException('Mot de passe actuel incorrect.');
     }
 
+    const sessionVersion = user.sessionVersion + 1;
     await this.users.update(userId, {
       passwordHash: await bcrypt.hash(dto.newPassword, BCRYPT_ROUNDS),
+      sessionVersion,
     });
 
+    return { ok: true, token: this.sign({ id: userId, sessionVersion }) };
+  }
+
+  /** Invalide immédiatement les jetons ouverts sur tous les appareils. */
+  async logout(userId: string) {
+    await this.users.increment({ id: userId }, 'sessionVersion', 1);
     return { ok: true };
   }
 }

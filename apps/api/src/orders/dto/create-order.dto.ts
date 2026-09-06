@@ -10,6 +10,7 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  IsUUID,
   Matches,
   Max,
   MaxLength,
@@ -121,10 +122,13 @@ export class CreateOrderDto {
   @Transform(({ value }) => (value ? String(value).replace(/[\s.-]/g, '') : undefined))
   telephone_contact?: string;
 
-  @IsOptional()
-  @IsString()
-  @MaxLength(200)
-  idempotenceKey?: string;
+  /**
+   * Identifie une tentative de commande côté client. La même clé peut être
+   * rejouée après une coupure réseau ; une nouvelle commande doit toujours
+   * recevoir une nouvelle clé.
+   */
+  @IsUUID('4', { message: "La clé d'idempotence doit être un UUID v4." })
+  idempotenceKey: string;
 
   /** Livraison express (supplément appliqué par le moteur de livraison). */
   @IsOptional()

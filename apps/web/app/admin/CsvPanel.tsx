@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useRef, useState } from 'react';
-import { apiFetch, ApiError, API_URL, getToken } from '../lib/api';
+import { apiFetch, ApiError, API_URL } from '../lib/api';
 import { ImportReport } from './types';
 
 type Props = {
@@ -19,15 +19,14 @@ export default function CsvPanel({ onImported, notify }: Props) {
   const fileRef = useRef<HTMLInputElement>(null);
 
   /**
-   * L'export est protégé par le jeton : un `<a href>` simple n'enverrait pas
-   * l'en-tête Authorization. On récupère donc le fichier puis on déclenche
-   * le téléchargement depuis une URL blob éphémère.
+   * L'export est protégé par la session HttpOnly. On récupère le fichier puis
+   * on déclenche le téléchargement depuis une URL blob éphémère.
    */
   const download = async () => {
     setError(null);
     try {
       const res = await fetch(`${API_URL}/products/admin/export.csv`, {
-        headers: { Authorization: `Bearer ${getToken()}` },
+        credentials: 'include',
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
 

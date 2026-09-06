@@ -57,15 +57,23 @@ export class NotificationsService implements OnModuleInit {
     this.logger.log('Transport de notification : SMTP.');
   }
 
-  async send(message: Message): Promise<void> {
-    if (!message.to) return;
+  /**
+   * Retourne le résultat du transport sans laisser une notification faire
+   * échouer l'opération métier. Les campagnes e-mail peuvent ainsi compter
+   * et signaler les échecs au lieu de les masquer.
+   */
+  async send(message: Message): Promise<boolean> {
+    if (!message.to) return false;
 
     try {
       if (!this.transporter) {
         this.logger.log(
           `[notification simulée] à ${message.to} — ${message.subject}\n${message.text}`,
         );
-        return;
+        // Le transport `log` est utile en développement, mais une campagne
+        // ne doit jamais être marquée comme réellement distribuée dans ce
+        // mode.
+        return false;
       }
 
       await this.transporter.sendMail({
@@ -74,10 +82,12 @@ export class NotificationsService implements OnModuleInit {
         subject: message.subject,
         text: message.text,
       });
+      return true;
     } catch (err) {
       this.logger.error(
         `Échec d'envoi de la notification à ${message.to} : ${(err as Error).message}`,
       );
+      return false;
     }
   }
 

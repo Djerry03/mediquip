@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useApp } from '../context/AppContext';
-import { apiFetch } from '../lib/api';
+import { apiFetch, mediaUrl } from '../lib/api';
 
 export type PublicBanner = {
   id: string;
@@ -76,7 +76,7 @@ export default function Banner({ placement }: { placement: string }) {
         const style = {
           background: b.backgroundColor || 'var(--forest)',
           color: b.textColor || '#fff',
-          backgroundImage: b.imageUrl ? `url(${b.imageUrl})` : undefined,
+          backgroundImage: b.imageUrl ? `url(${mediaUrl(b.imageUrl)})` : undefined,
         };
 
         // Un lien absolu sort du site : il s'ouvre dans un nouvel onglet et

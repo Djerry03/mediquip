@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { formatFcfa } from '../context/AppContext';
-import { apiFetch, ApiError, API_URL } from '../lib/api';
+import { apiFetch, ApiError, mediaUrl } from '../lib/api';
 import { AdminProduct } from './types';
 
 const MAX_FEATURED = 12;
@@ -94,7 +94,7 @@ export default function FeaturedPanel({ notify }: { notify: (m: string) => void 
     <div className="thumb">
       {p.images?.[0] ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={`${API_URL.replace(/\/api$/, '')}${p.images[0]}`} alt="" />
+        <img src={mediaUrl(p.images[0])} alt="" />
       ) : (
         <span>✚</span>
       )}

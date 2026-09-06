@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Product, useApp } from '../../context/AppContext';
 import ProductCard from '../../components/ProductCard';
 import Reveal from '../../components/Reveal';
+import { mediaUrl } from '../../lib/api';
 import type { CampaignPage } from '../../lib/products.server';
 
 export default function CampaignContent({ page }: { page: CampaignPage }) {
@@ -50,7 +51,7 @@ export default function CampaignContent({ page }: { page: CampaignPage }) {
         style={{
           background: page.backgroundColor || 'var(--forest)',
           color: page.textColor || '#fff',
-          backgroundImage: page.heroImageUrl ? `url(${page.heroImageUrl})` : undefined,
+          backgroundImage: page.heroImageUrl ? `url(${mediaUrl(page.heroImageUrl)})` : undefined,
         }}
       >
         <h1>{page.title[lang]}</h1>

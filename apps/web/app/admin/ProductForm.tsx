@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { formatFcfa } from '../context/AppContext';
-import { apiFetch, ApiError, API_URL, getToken } from '../lib/api';
+import { apiFetch, ApiError, API_URL, mediaUrl } from '../lib/api';
 import { AdminProduct, PRODUCT_FLAGS, StockLine } from './types';
 
 type Props = {
@@ -203,7 +203,7 @@ export default function ProductForm({ product, categories, onClose, onSaved, not
     try {
       const res = await fetch(`${API_URL}/products/${product.id}/images`, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${getToken()}` },
+        credentials: 'include',
         body,
       });
       const payload = await res.json().catch(() => null);
@@ -541,7 +541,7 @@ export default function ProductForm({ product, categories, onClose, onSaved, not
                     {images.map((url, index) => (
                       <div className={`image-tile ${index === 0 ? 'cover' : ''}`} key={url}>
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={`${API_URL.replace(/\/api$/, '')}${url}`} alt="" />
+                        <img src={mediaUrl(url)} alt="" />
                         {index === 0 && <span className="image-badge">Vignette</span>}
                         <div className="image-actions">
                           {index !== 0 && (
